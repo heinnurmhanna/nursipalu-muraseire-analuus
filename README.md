@@ -1,7 +1,5 @@
-# nursipalu-muraseire-analuus
+# NURSIPALU MÜRASEIRE, HARJUTUSGRAAFIKU JA ILMASTIKUANDMETE KÕRVUTAMINE
 Andmetöövoog Nursipalu harjutusvälja graafiku, müraseire ja ilmastikuandmete kõrvutamiseks.
-
-# Nursipalu müraseire, harjutusgraafiku ja ilmastikuandmete kõrvutamine
 
 ## Projekti kirjeldus
 
