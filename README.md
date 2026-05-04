@@ -280,19 +280,20 @@ Võimalikud GitHubi ülesanded
 | Selget seost ei ilmne | Tulemus võib tunduda nõrk | Rõhutada, et eesmärk on hinnata kõrvutamise tulemuslikkust |
 
 ## Projekti piirangud
-Harjutusvälja graafik näitab planeeritud tegevusi, mitte tingimata tegelikult toimunud tegevusi.
-Müraseirejaam võib mõõta ka muid heliallikaid peale harjutusvälja tegevuse.
-Ilmastikuandmed võivad pärineda lähimast mõõtepunktist või mudelandmetest.
-Andmete kõrvutamisel ei pruugi ilmneda selget seost.
-Projekt ei tõesta põhjuslikku seost, vaid loob andmetöövoo ja hindab ajapõhise kõrvutamise kasulikkust.
+- Harjutusvälja graafik näitab planeeritud tegevusi, mitte tingimata tegelikult toimunud tegevusi.
+- Müraseirejaam võib mõõta ka muid heliallikaid peale harjutusvälja tegevuse.
+- Ilmastikuandmed võivad pärineda lähimast mõõtepunktist või mudelandmetest.
+- Andmete kõrvutamisel ei pruugi ilmneda selget seost.
+- Projekt ei tõesta põhjuslikku seost, vaid loob andmetöövoo ja hindab ajapõhise kõrvutamise kasulikkust.
 
 ## Edukriteeriumid
 
 Projekt loetakse õnnestunuks, kui:
-vähemalt üks põhiandmevoog tuleb ajas muutuvast andmeallikast;
-andmete sissevõtt on automatiseeritud;
-olemas on vähemalt üks transformatsioonisamm;
-olemas on vähemalt kolm andmekvaliteedi testi;
-loodud on dashboard vähemalt kahe KPI või visuaaliga;
-README kirjeldab projekti eesmärki, arhitektuuri ja käivitamist;
-andmete põhjal on tehtud järeldus, kas selline kõrvutamine annab kasulikku infot.
+
+- vähemalt üks põhiandmevoog tuleb ajas muutuvast andmeallikast;
+- andmete sissevõtt on automatiseeritud;
+- olemas on vähemalt üks transformatsioonisamm;
+- olemas on vähemalt kolm andmekvaliteedi testi;
+- loodud on dashboard vähemalt kahe KPI või visuaaliga;
+- README kirjeldab projekti eesmärki, arhitektuuri ja käivitamist;
+- andmete põhjal on tehtud järeldus, kas selline kõrvutamine annab kasulikku infot.
