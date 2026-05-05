@@ -183,52 +183,77 @@ peamisi tulemusi ja piiranguid.
 
 ## Ajakava
 
-### Nädal 1: Planeerimine ja arhitektuur
-Periood: 18.05–24.05
+### 18.05 - 24.05: Planeerimine ja arhitektuur
 
-Eesmärk on saada paika projekti mõte, andmeallikad ja arhitektuur.
+Mida teete:
+- Lepite kokku äriküsimuse ja mõõdikud.
+- Kaardistate andmeallikad ja kontrollite, et ligipääsud töötavad.
+- Joonistate arhitektuuriskeemi.
+- Jagate ülesanded grupiliikmete vahel.
+- Alustate esimeste tehniliste katsetustega (kas API töötab, kas saame andmebaasi ühenduda).
 
-Tulemused:
+Mida esitate (24.05. P 23:59):
+- Repos fail docs/arhitektuur.md, mis sisaldab:
+- Äriküsimust ja 2-3 mõõdikut.
+- Arhitektuuriskeemi (Mermaid, Excalidraw, draw.io, käsitsi joonis + foto).
+- Andmeallikate loetelu ja muutuvuse kirjeldust.
+- Tööjaotust (kes mille eest vastutab).
+- 2-3 riski.
+- Individuaalne vahetagasiside Moodle assignmentis (5 minutit, konfidentsiaalne).
 
-- GitHubi repo loodud.
-- docs/arhitektuur.md lisatud.
-- Äriküsimus sõnastatud.
-- Andmeallikad kirjeldatud.
-- Esmane arhitektuuriskeem tehtud.
-- Rollid ja tööjaotus kokku lepitud.
-- Peamised riskid kirja pandud.
+### 25.05 - 31.05: Esimene töötav andmevoog
 
-### Nädal 2: Esimene töötav andmevoog
+Mida teete:
+- Ehitate ühe andmevoo täielikult välja: üks allikas, andmete sissevõtt, üks transformatsioon, üks visuaal.
+- Selle eesmärk: leida tehnilised probleemid varakult.
+- Pole vaja, et oleks olemas kõik allikad ja kõik testid. Oluline näha, kus tekivad võimalikud pudelikaelad.
 
-Periood: 25.05–31.05
+Mida esitate (31.05 P 23:59):
+Repos:
+- Toimiv kood (vähemalt üks allikas → transformatsioon → visuaal).
+- Fail docs/progress.md (5 rida): mis on valmis, mis on järgmised sammud, mis takistab.
+Individuaalne vahetagasiside Moodle assignmentis.
 
-Eesmärk on ehitada minimaalne töötav lahendus ühest andmeallikast visuaalini.
+### 01.06 - 07.06: Projekti lõpetamine
 
-Tulemused:
+Mida teete:
+- Lisate puuduvad andmeallikad ja transformatsioonid.
+- Kirjutate andmekvaliteedi testid (vähemalt 3 tk).
+- Viimistlete näidikulauda (vähemalt 2 KPI-d).
+- Täidate README ette antud malli põhjal.
+- Salvestate 10-minutilise video (esitlus + demo).
 
-- Vähemalt üks andmeallikas programmiliselt sisse loetud.
-- Vähemalt üks transformatsioon tehtud.
-- Vähemalt üks lihtne visuaal loodud.
-- docs/progress.md täidetud.
-- Tehnilised takistused dokumenteeritud.
+Mida esitate (07.06 P 23:59):
+Repos:
+- Täielik projekt vastavalt 8 kohustuslikule nõudele.
+- Täidetud README malli põhjal.
+- Video: 10 minutit, jagatud lingi kaudu (nt YouTube unlisted, Google Drive, Onedrive).
+- Moodle assignment: link videole, link repole. Kui repo on privaatne, lisage juhendajatele ligipääs.
+Individuaalne vahetagasiside Moodle assignmentis.
 
-### Nädal 3: Lõplik lahendus
+### 08.06 - 14.06: Tagasiside teistele 
 
-Periood: 01.06–07.06
+Mida teete:
+- Hiljemalt esmaspäeva hommikul saate Moodle's teada, mis 2 grupi videot ja repot teil tagasisidestada tuleb.
+- Vaatate videod, sirvite repod.
+- Esitate tagasiside Moodle assignmentis.
 
-Eesmärk on lisada kõik andmeallikad, kvaliteeditestid, dashboard ja lõplik dokumentatsioon.
+Mida esitate (14.06 P 23:59):
+Iga grupi kohta vastate 6 punktile. Iga vastus peab olema sisuline ja konkreetne, viidates just selle grupi tööle. Üldised vastused ("tubli", "hea töö") ei kvalifitseeru ja palutakse ümber teha.
+- Äriküsimus ja väärtus. Kas grupi äriküsimus on selge ja kas dashboard vastab sellele? Kas kasutaksid päriselt?
+- Andmevoog. Kas andmetoru on terviklik (allikad → transformatsioon → dashboard)? Kas ajas muutuvus tuleb välja?
+- Andmekvaliteet. Kas testid katavad olulisi probleeme? Mis võiks veel lisada?
+- Tehniline lahendus. Mis tundus tark valik? Mis oleks ise teisiti teinud?
+- Selgus ja esitlus. Kas video on arusaadav? Mis jäi segaseks?
+- Mida tegi see grupp paremini? Mida saaks see grupp teie grupilt õppida? Kahepoolne refleksioon, konkreetsed asjad.
 
-Tulemused:
+Näide heast vastusest punktile 3:
+Olemas on null-, unique- ja accepted_values testid. Hea, et on ka custom test "tellimuse summa peab olema positiivne". Lisaks võiks olla värskuse test, mis kontrollib, et viimane kirje pole vanem kui 24 tundi.
 
-- Kõik põhiandmeallikad sisse loetud.
-- Andmed ühendatud analüüsitabeliks.
-- Vähemalt kolm andmekvaliteedi testi loodud.
-- Dashboard valmis.
-- README valmis.
-- Video salvestatud.
-- Repo ja video Moodle’isse esitatud.
+Näide ebapiisavast vastusest:
+Andmekvaliteet on hea ja testid katavad kõik olulise.
 
-Võimalikud GitHubi ülesanded
+## Võimalikud GitHubi ülesanded
 
 #### Andmeallikad
 - Uurida müraseire avaandmete struktuuri.
