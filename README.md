@@ -13,7 +13,10 @@ Roland:
 2. Anda esialgsed suunised tiimile andmete kogumise kohta
 
 Raili: 
-1. Luua andmeskeem 
+1. Luua andmeskeem
+
+Aldo ja Hanna: 
+1. Toetada Rolandit ning vaadata, kas tehnilisi katsetusi
 
 ## Projekti kirjeldus
 
