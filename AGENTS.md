@@ -6,15 +6,9 @@ The goal is to ingest public data sources, clean and align them on a common time
 
 ## What to do first
 - Use `README.md` as the primary source of truth for project scope and data sources.
-- The repository currently contains planning documentation only, not implementation code.
-- Start by creating a reproducible project structure such as:
-  - `src/ingest/`
-  - `src/transform/`
-  - `src/quality/`
-  - `src/dashboard/`
-  - `data/`
-  - `tests/`
-- Prefer Python for scripts, since the README suggests `requirements.txt` and a data workflow architecture.
+- The project structure is already scaffolded (`src/ingest/`, `src/transform/`, `src/quality/`, `src/dashboard/`, `data/`, `tests/`). Do not recreate it.
+- Install dependencies with `pip install -r requirements.txt` before running any scripts.
+- Prefer Python for scripts and place each script in the appropriate `src/` subdirectory.
 
 ## Key tasks for the agent
 - Implement data ingestion scripts for noise, schedule, and weather sources.
