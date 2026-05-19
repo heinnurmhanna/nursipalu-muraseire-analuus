@@ -96,7 +96,7 @@ Tehke esimesed tehnilised katsetused. Kas API vastab? Kas saate andmebaasiga ü
 
 #### Andmeallikate kontroll
 
-Kontrollida, kas müraseire avaandmetele saab programmiliselt ligi.
+- Kontrollida, kas müraseire avaandmetele saab programmiliselt ligi.
 - Kontrollida, kas Kaitseväe harjutusgraafiku JSON on koodiga loetav.
 - Valida sobiv ilmaandmete allikas.
 - Kontrollida, millised väljad on igas andmeallikas olemas.
