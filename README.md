@@ -1,17 +1,26 @@
 # NURSIPALU MÜRASEIRE, HARJUTUSGRAAFIKU JA ILMASTIKUANDMETE KÕRVUTAMINE
 Andmetöövoog Nursipalu harjutusvälja graafiku, müraseire ja ilmastikuandmete kõrvutamiseks.
 
+# SPRINT 1 
+
+# TO-DO #
+Hanna: 
+1. Uurida müraseirejaama andmete allika asukohta
+2. Teha githubis täiendused
+
+Roland: 
+1. Moodlesse esitada küsimus kasutatava tarkvara kohta
+2. Anda esialgsed suunised tiimile andmete kogumise kohta
+
+Raili: 
+1. Luua andmeskeem
+
+Aldo ja Hanna: 
+1. Toetada Rolandit ning vaadata, kas tehnilisi katsetusi
+
 ## Projekti kirjeldus
 
 Projekti eesmärk on luua otsast-lõpuni andmetöövoog, mis kogub ja ühendab Nursipalu müraseirejaama mõõtmised, Kaitseväe harjutusvälja graafiku ning ilmastikuandmed. Andmete põhjal luuakse näidikulaud, mille abil saab hinnata, kas harjutusvälja planeeritud tegevused ja ilmastikutingimused langevad kokku mõõdetud mürataseme muutustega.
-
-Projekt ei eelda, et andmete vahel leitakse kindel põhjuslik seos. Peamine eesmärk on hinnata, kas erinevate avalike andmeallikate ajapõhine kõrvutamine annab tõlgendatavaid ja kasulikke tulemusi.
-
-## Äriküsimus
-
-Kas Nursipalu harjutusvälja graafikus planeeritud tegevused ja samaaegsed ilmastikutingimused on seotud müraseirejaamas mõõdetud mürataseme tõusudega?
-
-## Projekti eesmärk
 
 Projekti tulemusena valmib andmetöövoog, mis:
 
@@ -21,6 +30,22 @@ Projekti tulemusena valmib andmetöövoog, mis:
 - kontrollib andmete kvaliteeti;
 - kuvab tulemused näidikulaual;
 - aitab teha järelduse, kas selline andmete kõrvutamine on tulemuslik.
+
+Projekt ei eelda, et andmete vahel leitakse kindel põhjuslik seos. Peamine eesmärk on hinnata, kas erinevate avalike andmeallikate ajapõhine kõrvutamine annab tõlgendatavaid ja kasulikke tulemusi.
+
+## Äriküsimus
+
+Kas Nursipalu harjutusvälja graafikus planeeritud tegevused ja samaaegsed ilmastikutingimused on seotud müraseirejaamas mõõdetud mürataseme tõusudega?
+
+Näidikulaud aitab vastata näiteks järgmistele küsimustele:
+- Kui palju kõrgem on keskmine müratase perioodidel, kus harjutusväljal toimub planeeritud tegevus?
+- Kui sageli langevad mürataseme tipud ajaliselt kokku harjutusgraafikus märgitud tegevustega?
+- Kas teatud ilmastikutingimused (näiteks tugev tuul või kindel tuulesuund) mõjutavad mõõdetud mürataset?
+
+Võimalikud KPI-d või mõõdikud näidikulaual:
+- keskmine müratase tegevusega vs tegevuseta perioodil;
+- mürataseme tõusude arv nädalas või päevas;
+- planeeritud harjutuste ja müratippude ajalise kattuvuse protsent.
 
 ## Andmeallikad
 
@@ -36,265 +61,20 @@ Kasutatavad andmeallikad:
 - Kaitseväe harjutusvälja graafiku JSON: https://mil.ee/wp-content/uploads/training-grounds/training_ground_schedule.json
 - Ilmastikuandmed: näiteks Open-Meteo või muu avalik ilmaandmete allikas
 
-## Peamised mõõdikud
+## Arhidektuuriskeem 
 
-Projektis analüüsitakse näiteks järgmisi mõõdikuid:
+Joonistage arhitektuuriskeem. Allikast lõpptulemini. Sobib Mermaid, draw.io, Excalidraw või käsitsi joonis + foto.
 
-- keskmine müratase planeeritud tegevusega perioodidel;
-- keskmine müratase tegevuseta perioodidel;
-- mürataseme tõusu juhtumite arv;
-- planeeritud harjutuste ja mõõdetud mürataseme tõusude ajaline kattuvus;
-- ilmastikutingimuste võimalik seos mürataseme muutustega.
+## Tööülesanded
 
-## Tööetapid
+Hanna Heinnurm - projektijuht (teema algataja)
+Roland Pajuleht - transformatsioonide omanik (andmebaaside ülesseadmine, andmete projektijuht) 
+Raili Jäe - näidikulaua omanik
+Aldo Rääbis - kvaliteedi omanik 
 
-### 1. Projekti ettevalmistus
+## Projekti riskid ja piirangud
 
-- Luua GitHubi repositoorium.
-- Lisada `README.md`.
-- Lisada `.gitignore`.
-- Lisada `.env.example`.
-- Luua projekti kaustastruktuur.
-- Kirjeldada esmane äriküsimus.
-- Kirjeldada andmeallikad ja nende muutuvus ajas.
-
-Soovituslik kaustastruktuur:
-
-```text
-nursipalu-noise-analysis/
-├── README.md
-├── .gitignore
-├── .env.example
-├── requirements.txt
-├── docs/
-│   ├── arhitektuur.md
-│   ├── progress.md
-│   └── projektiplaan.md
-├── src/
-│   ├── ingest/
-│   ├── transform/
-│   ├── quality/
-│   └── dashboard/
-├── data/
-│   └── .gitkeep
-└── tests/
-```
-
-### 2. Andmeallikate kontroll
-- Kontrollida, kas müraseire avaandmetele saab programmiliselt ligi.
-- Kontrollida, kas Kaitseväe harjutusgraafiku JSON on koodiga loetav.
-- Valida sobiv ilmaandmete allikas.
-- Kontrollida, millised väljad on igas andmeallikas olemas.
-- Dokumenteerida andmeallikate struktuur.
-- Tuvastada võimalikud probleemid, näiteks puuduvad väärtused, erinevad ajavööndid ja erinev ajagranulaarsus.
-
-### 3. Andmete sissevõtt
-- Luua skript müraseire andmete allalaadimiseks.
-- Luua skript harjutusgraafiku JSON-i allalaadimiseks.
-- Luua skript ilmaandmete pärimiseks.
-- Salvestada toorandmed lokaalselt või andmebaasi.
-- Tagada, et andmete sissevõtt on korratav ja automatiseeritav.
-- Lisada konfiguratsioon .env faili kaudu.
-
-Võimalikud failid:
-```src/ingest/ingest_noise.py
-src/ingest/ingest_schedule.py
-src/ingest/ingest_weather.py
-```
-
-### 4. Andmete transformatsioon
-
-- Puhastada müraseire andmed.
-- Teisendada harjutusgraafiku andmed ajavahemikeks.
-- Puhastada ja ühtlustada ilmaandmed.
-- Teisendada kõik ajad samasse ajavööndisse.
-- Viia andmed ühisele ajatasemele, näiteks tunnipõhiseks.
-- Ühendada müra-, graafiku- ja ilmaandmed üheks analüüsitabeliks.
-
-Lõplik analüüsitabel võiks sisaldada näiteks järgmisi välju:
-
-```timestamp
-station_id
-avg_noise_db
-max_noise_db
-scheduled_activity
-planned_noise_level
-wind_speed
-wind_direction
-pressure
-cloud_cover
-precipitation
-```
-
-### 5. Andmekvaliteedi kontroll
-
-Projektis lisatakse vähemalt kolm andmekvaliteedi testi.
-
-Võimalikud testid:
-
-| Test | Kirjeldus |
-|---|---|
-| `not_null_timestamp` | Ajatempel peab olema olemas |
-| `unique_station_timestamp` | Ühe jaama kohta ei tohi samal tunnil olla mitu rida |
-| `noise_value_range` | Müratase peab jääma realistlikku vahemikku |
-| `schedule_start_before_end` | Harjutuse algusaeg peab olema enne lõpuaega |
-| `weather_value_range` | Ilmaandmed peavad jääma mõistlikesse piiridesse |
-
-### 6. Näidikulaua loomine
-
-Dashboard peaks vastama äriküsimusele ja sisaldama vähemalt kahte KPI-d või visuaali.
-
-Võimalikud dashboard’i vaated:
-
-- müratase ajas;
-- harjutusgraafiku tegevused ajas;
-- keskmine müratase tegevusega ja tegevuseta perioodidel;
-- mürataseme ja tuulekiiruse võrdlus;
-- mürataseme ja tuulesuuna võrdlus;
-- mürataseme ja õhurõhu, pilvisuse või sademete võrdlus.
-
-### 7. Dokumentatsioon
-
-README või eraldi dokumentatsioon peaks sisaldama:
-
-projekti kirjeldust;
-äriküsimust;
-andmeallikate kirjeldust;
-arhitektuuri;
-käivitamise juhendit;
-andmekvaliteedi testide kirjeldust;
-dashboard’i kirjeldust;
-tulemusi ja järeldusi;
-projekti piiranguid;
-tööjaotust.
-
-### 8. Video ja lõplik esitamine
-
-Lõpus salvestatakse kuni 10-minutiline video, kus näidatakse:
-
-projekti eesmärki;
-andmeallikaid;
-andmetöövoogu;
-GitHubi repo struktuuri;
-andmete transformatsioone;
-andmekvaliteedi teste;
-dashboard’i;
-peamisi tulemusi ja piiranguid.
-
-## Ajakava
-
-### 18.05 - 24.05: Planeerimine ja arhitektuur
-
-Mida teete:
-- Lepite kokku äriküsimuse ja mõõdikud.
-- Kaardistate andmeallikad ja kontrollite, et ligipääsud töötavad.
-- Joonistate arhitektuuriskeemi.
-- Jagate ülesanded grupiliikmete vahel.
-- Alustate esimeste tehniliste katsetustega (kas API töötab, kas saame andmebaasi ühenduda).
-
-Mida esitate (24.05. P 23:59):
-- Repos fail docs/arhitektuur.md, mis sisaldab:
-- Äriküsimust ja 2-3 mõõdikut.
-- Arhitektuuriskeemi (Mermaid, Excalidraw, draw.io, käsitsi joonis + foto).
-- Andmeallikate loetelu ja muutuvuse kirjeldust.
-- Tööjaotust (kes mille eest vastutab).
-- 2-3 riski.
-- Individuaalne vahetagasiside Moodle assignmentis (5 minutit, konfidentsiaalne).
-
-### 25.05 - 31.05: Esimene töötav andmevoog
-
-Mida teete:
-- Ehitate ühe andmevoo täielikult välja: üks allikas, andmete sissevõtt, üks transformatsioon, üks visuaal.
-- Selle eesmärk: leida tehnilised probleemid varakult.
-- Pole vaja, et oleks olemas kõik allikad ja kõik testid. Oluline näha, kus tekivad võimalikud pudelikaelad.
-
-Mida esitate (31.05 P 23:59):
-Repos:
-- Toimiv kood (vähemalt üks allikas → transformatsioon → visuaal).
-- Fail docs/progress.md (5 rida): mis on valmis, mis on järgmised sammud, mis takistab.
-Individuaalne vahetagasiside Moodle assignmentis.
-
-### 01.06 - 07.06: Projekti lõpetamine
-
-Mida teete:
-- Lisate puuduvad andmeallikad ja transformatsioonid.
-- Kirjutate andmekvaliteedi testid (vähemalt 3 tk).
-- Viimistlete näidikulauda (vähemalt 2 KPI-d).
-- Täidate README ette antud malli põhjal.
-- Salvestate 10-minutilise video (esitlus + demo).
-
-Mida esitate (07.06 P 23:59):
-Repos:
-- Täielik projekt vastavalt 8 kohustuslikule nõudele.
-- Täidetud README malli põhjal.
-- Video: 10 minutit, jagatud lingi kaudu (nt YouTube unlisted, Google Drive, Onedrive).
-- Moodle assignment: link videole, link repole. Kui repo on privaatne, lisage juhendajatele ligipääs.
-Individuaalne vahetagasiside Moodle assignmentis.
-
-### 08.06 - 14.06: Tagasiside teistele 
-
-Mida teete:
-- Hiljemalt esmaspäeva hommikul saate Moodle's teada, mis 2 grupi videot ja repot teil tagasisidestada tuleb.
-- Vaatate videod, sirvite repod.
-- Esitate tagasiside Moodle assignmentis.
-
-Mida esitate (14.06 P 23:59):
-Iga grupi kohta vastate 6 punktile. Iga vastus peab olema sisuline ja konkreetne, viidates just selle grupi tööle. Üldised vastused ("tubli", "hea töö") ei kvalifitseeru ja palutakse ümber teha.
-- Äriküsimus ja väärtus. Kas grupi äriküsimus on selge ja kas dashboard vastab sellele? Kas kasutaksid päriselt?
-- Andmevoog. Kas andmetoru on terviklik (allikad → transformatsioon → dashboard)? Kas ajas muutuvus tuleb välja?
-- Andmekvaliteet. Kas testid katavad olulisi probleeme? Mis võiks veel lisada?
-- Tehniline lahendus. Mis tundus tark valik? Mis oleks ise teisiti teinud?
-- Selgus ja esitlus. Kas video on arusaadav? Mis jäi segaseks?
-- Mida tegi see grupp paremini? Mida saaks see grupp teie grupilt õppida? Kahepoolne refleksioon, konkreetsed asjad.
-
-Näide heast vastusest punktile 3:
-Olemas on null-, unique- ja accepted_values testid. Hea, et on ka custom test "tellimuse summa peab olema positiivne". Lisaks võiks olla värskuse test, mis kontrollib, et viimane kirje pole vanem kui 24 tundi.
-
-Näide ebapiisavast vastusest:
-Andmekvaliteet on hea ja testid katavad kõik olulise.
-
-## Võimalikud GitHubi ülesanded
-
-#### Andmeallikad
-- Uurida müraseire avaandmete struktuuri.
-- Uurida Kaitseväe graafiku JSON-i struktuuri.
-- Valida ilmaandmete allikas.
-- Kirjeldada kõik kasutatavad väljad.
-
-#### Andmete sissevõtt
-- Luua müraseire andmete sissevõtu skript.
-- Luua harjutusgraafiku sissevõtu skript.
-- Luua ilmaandmete sissevõtu skript.
-- Lisada .env.example.
-
-#### Transformatsioonid
-- Ühtlustada ajatemplid.
-- Agregeerida müraseire andmed tunnipõhiseks.
-- Teisendada harjutusgraafik ajavahemikeks.
-- Ühendada müra-, graafiku- ja ilmaandmed.
-
-#### Andmekvaliteet
-- Lisada ajatemplite not null kontroll.
-- Lisada duplikaatide kontroll.
-- Lisada mürataseme väärtuste vahemiku kontroll.
-- Lisada graafiku algus- ja lõpuaja kontroll.
-- Lisada ilmaandmete väärtuste vahemiku kontroll.
-
-#### Dashboard
-- Luua mürataseme ajajoone visuaal.
-- Lisada harjutusgraafiku tegevused visuaalile.
-- Lisada tegevusega ja tegevuseta perioodide võrdlus.
-- Lisada ilmastikutingimuste vaade.
-- Lisada filtrid.
-
-#### Dokumentatsioon
-- Kirjutada README.
-- Kirjutada arhitektuuridokument.
-- Kirjutada progressidokument.
-- Kirjeldada projekti piirangud.
-- Lisada käivitamise juhend.
-
-## Projekti riskid
+### Projekti riskid
 | Risk | Mõju | Maandus |
 |---|---|---|
 | Müraseire andmetele ligipääs on keeruline | Andmete sissevõtt võib venida | Kontrollida ligipääsu esimesel nädalal |
@@ -304,21 +84,38 @@ Andmekvaliteet on hea ja testid katavad kõik olulise.
 | Ilmastikuandmed ei pärine täpselt samast asukohast | Tulemused võivad olla ligikaudsed | Dokumenteerida ilmaandmete allikas ja koordinaadid |
 | Selget seost ei ilmne | Tulemus võib tunduda nõrk | Rõhutada, et eesmärk on hinnata kõrvutamise tulemuslikkust |
 
-## Projekti piirangud
+### Projekti piirangud
 - Harjutusvälja graafik näitab planeeritud tegevusi, mitte tingimata tegelikult toimunud tegevusi.
 - Müraseirejaam võib mõõta ka muid heliallikaid peale harjutusvälja tegevuse.
 - Ilmastikuandmed võivad pärineda lähimast mõõtepunktist või mudelandmetest.
 - Andmete kõrvutamisel ei pruugi ilmneda selget seost.
 - Projekt ei tõesta põhjuslikku seost, vaid loob andmetöövoo ja hindab ajapõhise kõrvutamise kasulikkust.
 
-## Edukriteeriumid
+### Tehnilised katsetused 
+Tehke esimesed tehnilised katsetused. Kas API vastab? Kas saate andmebaasiga ühenduda? Kas valitud tööriistad jooksevad?
 
-Projekt loetakse õnnestunuks, kui:
+#### Andmeallikate kontroll
 
-- vähemalt üks põhiandmevoog tuleb ajas muutuvast andmeallikast;
-- andmete sissevõtt on automatiseeritud;
-- olemas on vähemalt üks transformatsioonisamm;
-- olemas on vähemalt kolm andmekvaliteedi testi;
-- loodud on dashboard vähemalt kahe KPI või visuaaliga;
-- README kirjeldab projekti eesmärki, arhitektuuri ja käivitamist;
-- andmete põhjal on tehtud järeldus, kas selline kõrvutamine annab kasulikku infot.
+- Kontrollida, kas müraseire avaandmetele saab programmiliselt ligi.
+- Kontrollida, kas Kaitseväe harjutusgraafiku JSON on koodiga loetav.
+- Valida sobiv ilmaandmete allikas.
+- Kontrollida, millised väljad on igas andmeallikas olemas.
+- Dokumenteerida andmeallikate struktuur.
+- Tuvastada võimalikud probleemid, näiteks puuduvad väärtused, erinevad ajavööndid ja erinev ajagranulaarsus.
+
+## Töö etapid 
+
+Siia vist võiksime juurde kirjutada ka samm sammulised mõtted, et milline projekt on
+
+1. Määratleda äriküsimus. Sõnastada, mida soovitakse teada saada (kas harjutused ja ilm mõjutavad mürataset).
+2. Kaardistada andmeallikad. Leida müraseire, harjutusgraafiku ja ilmastiku andmeallikad ning kontrollida ligipääsu.
+3. Luua projekti struktuur. Teha GitHubi repo, kaustad, README ja vajalikud konfiguratsioonifailid.
+4. Koguda andmed automaatselt. Luua skriptid, mis laadivad regulaarselt alla müra-, ilma- ja harjutusgraafiku andmed.
+5. Salvestada toorandmed. Hoida algandmed failides või andmebaasis, et neid saaks hiljem uuesti kasutada.
+6. Puhastada ja teisendada andmed. Ühtlustada ajatemplid, eemaldada vigased väärtused ja viia kõik andmed samale ajatasemele (nt tunnipõhiseks).
+7. Ühendada andmed üheks tabeliks. Siduda müraseire, harjutusgraafiku ja ilmastikuandmed ühise ajajoone alusel.
+8. Kontrollida andmekvaliteeti. Teha testid puuduvate väärtuste, duplikaatide ja ebareaalsete mõõtmiste leidmiseks.
+9. Luua dashboard / näidikulaud. Kuvada graafikud ja KPI-d, mis aitavad võrrelda mürataset, harjutusi ja ilmastikku.
+10. Analüüsida tulemusi. Vaadata, kas harjutuste ja mürataseme vahel ilmneb ajaline seos ning kuidas ilm võib tulemusi mõjutada.
+11. Dokumenteerida projekt. Kirjeldada arhitektuur, töövoog, testid, piirangud ja käivitamise juhend.
+12. Esitleda lõpptulemust. Salvestada demo/video ja näidata kogu andmetöövoogu allikast dashboardini.
