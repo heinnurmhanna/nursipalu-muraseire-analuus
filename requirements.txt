@@ -1,0 +1,8 @@
+requests
+pandas
+python-dotenv
+duckdb
+apscheduler
+dash
+plotly
+pytest
