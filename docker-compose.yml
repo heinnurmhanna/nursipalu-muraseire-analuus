@@ -1,0 +1,11 @@
+services:
+  pipeline:
+    build: .
+    volumes:
+      - ./data:/app/data      # DuckDB file and raw archives persist on the host
+      - ./.env:/app/.env      # secrets never baked into the image
+    ports:
+      - "8050:8050"
+    restart: unless-stopped
+    env_file:
+      - .env

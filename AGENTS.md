@@ -24,3 +24,4 @@ The goal is to ingest public data sources, clean and align them on a common time
 
 ## Useful reference
 - `README.md` contains the project description, business question, expected data sources, and suggested workflow.
+- `docs/data-storage-plan.md` defines folder layout, file formats, naming conventions, staged/merged schemas, metadata requirements, and the incremental update rule. Consult it before writing any ingestion or transform script.
