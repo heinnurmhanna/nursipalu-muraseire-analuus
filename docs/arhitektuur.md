@@ -51,19 +51,22 @@ Kõik andmed viiakse **tunnipõhisele** ajatasemele ja **UTC** ajavööndisse en
 
 ---
 
+## Andmebaasi kihid
+
+- Raw kiht: algandmed salvestatakse muutmata kujul `data/raw/` kausta või DuckDB raw-tabelitesse.
+- Staging / transformatsioonikiht: ajatemplid ühtlustatakse, väljade nimed korrastatakse ja andmed viiakse tunnipõhisele ajatasemele.
+- Analytical / mart kiht: müra-, graafiku- ja ilmaandmed ühendatakse ühise ajatelje alusel koondtabeliks või vaateks, mida kasutab dashboard.
+
+---
+
 ## Tööjaotus
 
-| Ülesanne | Vastutaja |
-|---|---|
-| Müraseire andmete sissevõtt (`ingest_noise.py`) | Roland |
-| Harjutusgraafiku sissevõtt (`ingest_schedule.py`) | Roland |
-| Ilmaandmete sissevõtt (`ingest_weather.py`) | Roland |
-| Andmete transformatsioon ja ühendamine | Roland |
-| Andmekvaliteedi testid | Roland |
-| Näidikulaud | Roland |
-| Dokumentatsioon | Roland |
-
-> Märkus: tööjaotus uuendada, kui liitub täiendavaid grupiliikmeid.
+| Roll | Vastutus | Täitja |
+|------|----------|--------|
+| Andmeallika omanik | Kirjutab sissevõtu loogika, hoiab API-t töös | [Hanna] |
+| Transformatsioonide omanik | Kirjutab mart kihi mudelid ja mõõdikute arvutuse | [Roland] |
+| Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid | [Aldo] |
+| Näidikulaua omanik | Ehitab näidikulaua ja seob selle äriküsimusega | [Raili] |
 
 ---
 
@@ -74,3 +77,13 @@ Kõik andmed viiakse **tunnipõhisele** ajatasemele ja **UTC** ajavööndisse en
 | Müraseire API struktuur muutub või muutub kättesaamatuks | Sissevõtu skript lakkab töötamast | Kontrollida ligipääsu esimesel nädalal; salvestada toorandmed lokaalselt |
 | Andmeallikate ajagranulaarsus on erinev (minutid vs. tunnid vs. päevad) | Andmete kõrvutamine on keeruline | Viia kõik andmed tunnipõhiseks transformatsioonietapis |
 | Harjutusgraafik kirjeldab planeeritud, mitte tegelikku tegevust | Seose tõlgendamine on piiratud | Kirjeldada see selgelt projekti piiranguna dashboardil ja README-s |
+
+---
+
+## Privaatsus ja turve
+
+Kasutatavad andmed on avalikud. Projekt ei töötle isikuandmeid ega konfidentsiaalseid tööandja andmeid.
+
+Konfiguratsioon ja võimalikud ligipääsuvõtmed hoitakse `.env` failis, mida GitHubi ei lisata. Repos on ainult `.env.example`, mis näitab vajalikke keskkonnamuutujaid. `.gitignore` välistab `.env` ja lokaalse `data/` kausta.
+
+
