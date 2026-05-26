@@ -1,6 +1,7 @@
 import math
 import os
 
+import pandas as pd
 import dash
 import plotly.express as px
 import plotly.graph_objects as go
@@ -49,7 +50,7 @@ app.layout = html.Div(
 
         html.Div(id="kpi-cards", style={"display": "flex", "flexWrap": "wrap", "gap": "1rem", "marginBottom": "1.5rem"}),
 
-        html.H2("Müratase ajas (LAeq, LCeq, LZeq)"),
+        html.H2("Müratase ajas koos harjutuste ja tuulekiirusega"),
         dcc.Graph(id="noise-timeline"),
 
         html.H2("Keskmine müratase: tegevusega vs. tegevuseta"),
@@ -81,6 +82,8 @@ def update_charts(start_date, end_date):
         where += f" AND timestamp_utc <= '{end_date} 23:59:59'"
 
     df = query_df(f"SELECT * FROM merged {where} ORDER BY timestamp_utc")
+
+
 
     empty_fig = go.Figure().update_layout(title="Andmed puuduvad")
 
@@ -115,26 +118,87 @@ def update_charts(start_date, end_date):
 
     # --- Chart 1: noise timeline (LAeq, LCeq, LZeq) ---
     fig_timeline = go.Figure()
+
     for col, label, color in [
-        ("laeq_db",  "LAeq",  "#2196F3"),
-        ("lceq_db",  "LCeq",  "#FF9800"),
-        ("lzeq_db",  "LZeq",  "#9C27B0"),
+        ("laeq_db", "LAeq", "#2196F3"),
+        ("lceq_db", "LCeq", "#FF9800"),
+        ("lzeq_db", "LZeq", "#9C27B0"),
     ]:
         if col in df.columns:
             fig_timeline.add_trace(go.Scatter(
-                x=df["timestamp_utc"], y=df[col],
-                mode="lines", name=label, line=dict(color=color),
+                x=df["timestamp_utc"],
+                y=df[col],
+                mode="lines",
+                name=label,
+                line=dict(color=color),
             ))
+
+    # Lisa tuulekiirus samale graafikule paremale Y-teljele
+    if "wind_speed_ms" in df.columns:
+        fig_timeline.add_trace(go.Scatter(
+            x=df["timestamp_utc"],
+            y=df["wind_speed_ms"],
+            mode="lines",
+            name="Tuulekiirus (m/s)",
+            yaxis="y2",
+            line=dict(color="#4CAF50", dash="dot"),
+        ))
+
     # Shade scheduled-activity periods
-    for _, row in df[df["has_scheduled_activity"] == True].iterrows():
+    activity_df = df[
+        df["has_scheduled_activity"].astype(str).str.lower().isin(["true", "1", "yes"])
+    ].copy()
+
+    print("Scheduled activity rows:", len(activity_df))
+
+    # Lisa legendi kirje planeeritud harjutuse jaoks
+    if not activity_df.empty:
+        fig_timeline.add_trace(go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(
+                size=12,
+                color="rgba(244,67,54,0.35)",
+                symbol="square",
+            ),
+            name="Planeeritud harjutus",
+            showlegend=True,
+        ))
+
+    # Lisa punased taustaalad
+    for _, row in activity_df.iterrows():
+        start = pd.to_datetime(row["timestamp_utc"])
+        end = start + pd.Timedelta(hours=1)
+
         fig_timeline.add_vrect(
-            x0=row["timestamp_utc"], x1=row["timestamp_utc"],
-            fillcolor="rgba(244,67,54,0.15)", layer="below", line_width=0,
+            x0=start,
+            x1=end,
+            fillcolor="rgba(244,67,54,0.35)",
+            layer="below",
+            line_width=0,
         )
-    fig_timeline.update_layout(
-        xaxis_title="Aeg (UTC)", yaxis_title="dB",
-        legend_title="Mõõt",
-    )
+
+        fig_timeline.update_layout(
+            xaxis_title="Aeg (UTC)",
+            yaxis=dict(
+                title="Müratase (dB)",
+            ),
+            yaxis2=dict(
+                title="Tuulekiirus (m/s)",
+                overlaying="y",
+                side="right",
+                showgrid=False,
+            ),
+            legend=dict(
+                title="Mõõt",
+                x=1.08,
+                y=1,
+                xanchor="left",
+                yanchor="top",
+            ),
+            margin=dict(r=260),
+        )
 
     # --- Chart 2: bar — activity vs non-activity for all three metrics ---
     bar_data = []
@@ -144,8 +208,7 @@ def update_charts(start_date, end_date):
         bar_data.append({"Mõõt": label, "Periood": "Tegevusega",  "dB": leq_avg(with_act[col])})
         bar_data.append({"Mõõt": label, "Periood": "Tegevuseta", "dB": leq_avg(without_act[col])})
 
-    import pandas as pd
-    bar_df = pd.DataFrame(bar_data).dropna(subset=["dB"])
+        bar_df = pd.DataFrame(bar_data).dropna(subset=["dB"])
     fig_bar = px.bar(
         bar_df, x="Mõõt", y="dB", color="Periood", barmode="group",
         labels={"dB": "Energeetiline keskmine (dB)"},
