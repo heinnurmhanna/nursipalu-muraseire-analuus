@@ -59,7 +59,7 @@ app.layout = html.Div(
         html.H2("Tipptaseme sündmused ja planeeritud tegevused"),
         dcc.Graph(id="peak-events"),
 
-        html.H2("Tuulekiirus ja -suund vs. müratase"),
+        html.H2("Tuulekiiruse ja -suuna seos planeeritud tegevuste ning müratasemega"),
         dcc.Graph(id="wind-noise-scatter"),
     ],
 )
@@ -107,13 +107,29 @@ def update_charts(start_date, end_date):
     peak_rate = (df["peak_event"] == True).sum() / max(len(df), 1) * 100
     activity_hours = int((df["has_scheduled_activity"] == True).sum())
 
+    # Mürataseme tõusu kattuvus planeeritud tegevustega
+    noise_rise_threshold = 60
+    noise_rise_df = df[df["laeq_db"] >= noise_rise_threshold]
+
+    if len(noise_rise_df) > 0:
+        overlap_pct = (
+            noise_rise_df["has_scheduled_activity"]
+            .astype(str)
+            .str.lower()
+            .isin(["true", "1", "yes"])
+            .sum() / len(noise_rise_df) * 100
+        )
+    else:
+        overlap_pct = 0
+
     kpis = [
         _kpi_card("LAeq tegevusega", _fmt_db(avg_laeq_with)),
         _kpi_card("LAeq tegevuseta", _fmt_db(avg_laeq_without)),
         _kpi_card("LCeq tegevusega", _fmt_db(avg_lceq_with)),
         _kpi_card("LCeq tegevuseta", _fmt_db(avg_lceq_without)),
-        _kpi_card("Tipptaseme tunnid", f"{peak_rate:.0f}%"),
         _kpi_card("Planeeritud tegevuse tunnid", str(activity_hours)),
+        _kpi_card("Tipptaseme tunnid", f"{peak_rate:.0f}%"),
+        _kpi_card("Müratõusude kattuvus tegevustega",f"{overlap_pct:.0f}%"),
     ]
 
     # --- Chart 1: noise timeline (LAeq, LCeq, LZeq) ---
@@ -234,25 +250,56 @@ def update_charts(start_date, end_date):
     ))
     fig_peaks.update_layout(xaxis_title="Aeg (UTC)", yaxis_title="dB")
 
-    # --- Chart 4: scatter wind speed vs laeq, coloured by downwind category ---
-    scatter_df = df.dropna(subset=["wind_speed_ms", "laeq_db"])
+    # --- Chart 4: wind speed vs LAeq, with weather/activity context ---
+    scatter_df = df.dropna(subset=["wind_speed_ms", "laeq_db"]).copy()
+
+    # Tee väärtused loetavamaks
+    scatter_df["Planeeritud tegevus"] = scatter_df["has_scheduled_activity"].map({
+        True: "Jah",
+        False: "Ei",
+    })
+
+    scatter_df["Tuulesuund"] = scatter_df["downwind_category"].map({
+        "downwind": "Allatuult",
+        "crosswind": "Külgtuul",
+        "upwind": "Vastutuul",
+    }).fillna(scatter_df["downwind_category"])
+
     fig_scatter = px.scatter(
         scatter_df,
-        x="wind_speed_ms", y="laeq_db",
-        color="downwind_category",
-        symbol="has_scheduled_activity",
+        x="wind_speed_ms",
+        y="laeq_db",
+        color="Tuulesuund",
+        symbol="Planeeritud tegevus",
+        trendline="ols",
         labels={
             "wind_speed_ms": "Tuulekiirus (m/s)",
-            "laeq_db": "LAeq (dB)",
-            "downwind_category": "Tuulesuund",
-            "has_scheduled_activity": "Planeeritud tegevus",
+            "laeq_db": "LAeq müratase (dB)",
+            "Tuulesuund": "Tuulesuund",
+            "Planeeritud tegevus": "Planeeritud tegevus",
+        },
+        hover_data={
+            "timestamp_utc": True,
+            "wind_speed_ms": ":.1f",
+            "laeq_db": ":.1f",
+            "Tuulesuund": True,
+            "Planeeritud tegevus": True,
         },
         color_discrete_map={
-            "downwind":  "#F44336",
-            "crosswind": "#FF9800",
-            "upwind":    "#2196F3",
+            "Allatuult": "#F44336",
+            "Külgtuul": "#FF9800",
+            "Vastutuul": "#2196F3",
         },
-        opacity=0.7,
+        opacity=0.75,
+    )
+
+    fig_scatter.update_traces(marker=dict(size=9))
+
+    fig_scatter.update_layout(
+        xaxis_title="Tuulekiirus (m/s)",
+        yaxis_title="LAeq müratase (dB)",
+        legend_title="Tuulesuund / tegevus",
+        margin=dict(r=220),
     )
 
     return kpis, fig_timeline, fig_bar, fig_peaks, fig_scatter
