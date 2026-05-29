@@ -9,7 +9,7 @@ Graafik peab võimaldama kasutajal näha:
 - võimalikku seost harjutuste ja müratippude vahel.
 
 <img width="1536" height="1024" alt="ChatGPT Image 29  mai 2026, 08_51_17" src="https://github.com/user-attachments/assets/96a95494-a6e4-4ee8-b046-324085bffd2a" />
-Illustratiivne pilt
+Illustratiivne pilt (tegevuste juures ei pea olema kirjeldatud, et millega on tegemist, sest graafikust detailset tegevuste infot avalikult ei kuvata)
 
 ## Graafikul kasutatavad andmed ## 
 Mõõdetud müratase
