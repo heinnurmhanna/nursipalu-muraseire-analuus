@@ -29,6 +29,59 @@ def _kpi_card(title: str, value: str) -> html.Div:
         ],
     )
 
+def _planned_noise_color(level):
+    if level is None or str(level).lower() in ["nan", "none", ""]:
+        return "rgba(233,236,239,0.25)"
+
+    value = str(level).strip().lower()
+
+    color_map = {
+        "absent": "rgba(233,236,239,0.35)",
+        
+        "madal": "rgba(223,240,216,0.60)",
+        "low": "rgba(223,240,216,0.60)",
+
+        "keskmine": "rgba(255,243,205,0.65)",
+        "medium": "rgba(255,243,205,0.65)",
+        "average": "rgba(255,243,205,0.65)",
+
+        "kõrge": "rgba(255,229,180,0.70)",
+        "korge": "rgba(255,229,180,0.70)",
+        "high": "rgba(255,229,180,0.70)",
+
+        "väga kõrge": "rgba(248,215,218,0.75)",
+        "vaga kõrge": "rgba(248,215,218,0.75)",
+        "vaga korge": "rgba(248,215,218,0.75)",
+        "very high": "rgba(248,215,218,0.75)",
+        "very_high": "rgba(248,215,218,0.75)",
+    }
+
+    return color_map.get(value, "rgba(233,236,239,0.25)")
+
+
+def _wind_direction_to_compass(degrees):
+    if degrees is None or math.isnan(degrees):
+        return None
+
+    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    index = int((degrees + 22.5) // 45) % 8
+    return directions[index]
+
+
+def _noise_class(avg_db, n):
+    if n < 5:
+        return 0
+    if avg_db < 45:
+        return 1
+    if avg_db < 50:
+        return 2
+    if avg_db < 55:
+        return 3
+    if avg_db < 60:
+        return 4
+    if avg_db < 65:
+        return 5
+    return 6
 
 app.layout = html.Div(
     style={"fontFamily": "sans-serif", "maxWidth": "1300px", "margin": "0 auto", "padding": "1rem"},
@@ -53,6 +106,12 @@ app.layout = html.Div(
         html.H2("Müratase ajas koos harjutuste ja tuulekiirusega"),
         dcc.Graph(id="noise-timeline"),
 
+        html.H2("Müraseirejaama mõõdetud müratase ja Nursipalu harjutusvälja planeeritud mürakategooriad"),
+        dcc.Graph(id="spec-noise-activity"),
+
+        html.H2("Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi"),
+        dcc.Graph(id="spec-wind-heatmap"),        
+
         html.H2("Keskmine müratase: tegevusega vs. tegevuseta"),
         dcc.Graph(id="noise-by-activity"),
 
@@ -68,6 +127,8 @@ app.layout = html.Div(
 @app.callback(
     Output("kpi-cards", "children"),
     Output("noise-timeline", "figure"),
+    Output("spec-noise-activity", "figure"),
+    Output("spec-wind-heatmap", "figure"),
     Output("noise-by-activity", "figure"),
     Output("peak-events", "figure"),
     Output("wind-noise-scatter", "figure"),
@@ -88,7 +149,7 @@ def update_charts(start_date, end_date):
     empty_fig = go.Figure().update_layout(title="Andmed puuduvad")
 
     if df.empty:
-        return [html.P("Andmed puuduvad")], empty_fig, empty_fig, empty_fig, empty_fig
+        return [html.P("Andmed puuduvad")], empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, empty_fig
 
     with_act = df[df["has_scheduled_activity"] == True]
     without_act = df[df["has_scheduled_activity"] == False]
@@ -195,26 +256,26 @@ def update_charts(start_date, end_date):
             line_width=0,
         )
 
-        fig_timeline.update_layout(
-            xaxis_title="Aeg (UTC)",
-            yaxis=dict(
-                title="Müratase (dB)",
-            ),
-            yaxis2=dict(
-                title="Tuulekiirus (m/s)",
-                overlaying="y",
-                side="right",
-                showgrid=False,
-            ),
-            legend=dict(
-                title="Mõõt",
-                x=1.08,
-                y=1,
-                xanchor="left",
-                yanchor="top",
-            ),
-            margin=dict(r=260),
-        )
+    fig_timeline.update_layout(
+        xaxis_title="Aeg (UTC)",
+        yaxis=dict(
+            title="Müratase (dB)",
+        ),
+        yaxis2=dict(
+            title="Tuulekiirus (m/s)",
+            overlaying="y",
+            side="right",
+            showgrid=False,
+        ),
+        legend=dict(
+            title="Mõõt",
+            x=1.08,
+            y=1,
+            xanchor="left",
+            yanchor="top",
+        ),
+        margin=dict(r=260),
+    )
 
     # --- Chart 2: bar — activity vs non-activity for all three metrics ---
     bar_data = []
@@ -224,7 +285,7 @@ def update_charts(start_date, end_date):
         bar_data.append({"Mõõt": label, "Periood": "Tegevusega",  "dB": leq_avg(with_act[col])})
         bar_data.append({"Mõõt": label, "Periood": "Tegevuseta", "dB": leq_avg(without_act[col])})
 
-        bar_df = pd.DataFrame(bar_data).dropna(subset=["dB"])
+    bar_df = pd.DataFrame(bar_data).dropna(subset=["dB"])
     fig_bar = px.bar(
         bar_df, x="Mõõt", y="dB", color="Periood", barmode="group",
         labels={"dB": "Energeetiline keskmine (dB)"},
@@ -302,7 +363,220 @@ def update_charts(start_date, end_date):
         margin=dict(r=220),
     )
 
-    return kpis, fig_timeline, fig_bar, fig_peaks, fig_scatter
+    # --- New spec visual 1: LAeq + planned noise categories + 65 dB threshold ---
+    
+    fig_spec_noise_activity = go.Figure()
+
+    # Filtreerib välja read, kus on planeeritud tegevus.
+    # Väärtused teisendatakse tekstiks, et töötaks nii True, "true", "1" kui ka "yes" korral.
+    activity_spec_df = df[
+        df["has_scheduled_activity"].astype(str).str.lower().isin(["true", "1", "yes"])
+    ].copy()
+
+    # Lisab graafikule planeeritud tegevuste perioodid taustavärvina.
+    for _, row in activity_spec_df.iterrows():
+        start = pd.to_datetime(row["timestamp_utc"])
+        end = start + pd.Timedelta(hours=1)
+        planned_level = row.get("planned_noise_level", None)
+
+        fig_spec_noise_activity.add_vrect(
+            x0=start,
+            x1=end,
+            fillcolor=_planned_noise_color(planned_level),
+            layer="below",
+            line_width=0,
+        )
+
+    # Lisab mõõdetud mürataseme joone.
+    fig_spec_noise_activity.add_trace(go.Scatter(
+        x=df["timestamp_utc"],
+        y=df["laeq_db"],
+        mode="lines",
+        name="Mõõdetud müratase LAeq",
+        line=dict(color="#2196F3", width=2),
+    ))
+
+    # Lisab 65 dB võrdluspiiri.
+    fig_spec_noise_activity.add_hline(
+        y=65,
+        line_dash="dash",
+        line_color="#555555",
+        line_width=2,
+        annotation_text="Ld = 65 dB",
+        annotation_position="top right",
+    )
+
+    # Lisab legendi
+    for label, color in [
+        ("Madal", "#DFF0D8"),
+        ("Keskmine", "#FFF3CD"),
+        ("Kõrge", "#FFE5B4"),
+        ("Väga kõrge", "#F8D7DA"),
+        ("Müra puudub", "#E9ECEF")
+    ]:
+        fig_spec_noise_activity.add_trace(go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(size=12, color=color, symbol="square"),
+            name=label,
+            showlegend=True,
+        ))
+
+    fig_spec_noise_activity.update_layout(
+        xaxis_title="Aeg (UTC)",
+        yaxis_title="Müratase LAeq (dB)",
+        legend_title="Mõõt / Müra kategooria",
+        legend=dict(
+            x=1.02,
+            y=1,
+            xanchor="left",
+            yanchor="top",
+        ),
+        margin=dict(r=260),
+    )
+
+    # --- New spec visual 2: heatmap wind direction / wind speed vs LAeq ---
+    noise_col = "laeq_db"
+
+    # Leiame tuulesuuna veeru.
+    if "wind_direction" in df.columns:
+        wind_dir_col = "wind_direction"
+    elif "wind_direction_deg" in df.columns:
+        wind_dir_col = "wind_direction_deg"
+    elif "wind_direction_10m" in df.columns:
+        wind_dir_col = "wind_direction_10m"
+    else:
+        wind_dir_col = None
+
+    # Leiame tuulekiiruse veeru.
+    if "wind_speed" in df.columns:
+        wind_speed_col = "wind_speed"
+    elif "wind_speed_ms" in df.columns:
+        wind_speed_col = "wind_speed_ms"
+    elif "wind_speed_10m" in df.columns:
+        wind_speed_col = "wind_speed_10m"
+    else:
+        wind_speed_col = None
+
+    # Kui tuuleandmeid pole, kuvame tühja graafiku teatega.
+    if wind_dir_col is None or wind_speed_col is None:
+        fig_spec_wind_heatmap = go.Figure()
+        fig_spec_wind_heatmap.update_layout(
+            title="Tuuleandmed puuduvad",
+            xaxis_title="Tuulekiirus",
+            yaxis_title="Tuulesuund",
+        )
+    else:
+        # Jätame alles ainult read, kus LAeq, tuulekiirus ja tuulesuund on olemas.
+        heatmap_df = df.dropna(subset=[noise_col, wind_speed_col, wind_dir_col]).copy()
+
+        heatmap_df["wind_direction_compass"] = heatmap_df[wind_dir_col].apply(_wind_direction_to_compass)
+
+        # Jagame tuulekiiruse etteantud vahemikesse.
+        heatmap_df["wind_speed_bin"] = pd.cut(
+            heatmap_df[wind_speed_col],
+            bins=[0, 2, 4, 6, 8, float("inf")],
+            labels=["0–2 m/s", "2–4 m/s", "4–6 m/s", "6–8 m/s", "> 8 m/s"],
+            right=False,
+        )
+
+        grouped = (
+            heatmap_df
+            .dropna(subset=["wind_direction_compass", "wind_speed_bin"])
+            .groupby(["wind_direction_compass", "wind_speed_bin"], observed=False)
+            .agg(
+                avg_noise=(noise_col, "mean"),
+                n=(noise_col, "count"),
+            )
+            .reset_index()
+        )
+
+        directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        speed_bins = ["0–2 m/s", "2–4 m/s", "4–6 m/s", "6–8 m/s", "> 8 m/s"]
+
+        z = []
+        text = []
+
+        for direction in directions:
+            z_row = []
+            text_row = []
+
+            for speed_bin in speed_bins:
+                row = grouped[
+                    (grouped["wind_direction_compass"] == direction)
+                    & (grouped["wind_speed_bin"].astype(str) == speed_bin)
+                ]
+
+                if row.empty:
+                    z_row.append(0)
+                    text_row.append("Andmed<br>puuduvad")
+                else:
+                    avg_noise = float(row["avg_noise"].iloc[0])
+                    n = int(row["n"].iloc[0])
+
+                    z_row.append(_noise_class(avg_noise, n))
+                    text_row.append(f"{avg_noise:.1f}<br>n = {n}")
+
+            z.append(z_row)
+            text.append(text_row)
+
+        colorscale = [
+            [0.00, "#E9ECEF"],
+            [0.16, "#E9ECEF"],
+            [0.17, "#A8D99B"],
+            [0.32, "#A8D99B"],
+            [0.33, "#C5E1A5"],
+            [0.48, "#C5E1A5"],
+            [0.49, "#F3E27A"],
+            [0.64, "#F3E27A"],
+            [0.65, "#F8C96B"],
+            [0.80, "#F8C96B"],
+            [0.81, "#F79A3E"],
+            [0.92, "#F79A3E"],
+            [0.93, "#EF5350"],
+            [1.00, "#EF5350"],
+        ]
+
+        fig_spec_wind_heatmap = go.Figure(data=go.Heatmap(
+            z=z,
+            x=speed_bins,
+            y=directions,
+            text=text,
+            texttemplate="%{text}",
+            textfont=dict(size=12),
+            colorscale=colorscale,
+            zmin=0,
+            zmax=6,
+            hovertemplate=(
+                "Tuulesuund: %{y}<br>"
+                "Tuulekiirus: %{x}<br>"
+                "Keskmine LAeq / n:<br>%{text}"
+                "<extra></extra>"
+            ),
+            colorbar=dict(
+                title="Keskmine LAeq",
+                tickvals=[0, 1, 2, 3, 4, 5, 6],
+                ticktext=["n < 5", "<45", "45–50", "50–55", "55–60", "60–65", ">65"],
+            ),
+        ))
+
+        fig_spec_wind_heatmap.update_layout(
+            xaxis_title="Tuulekiirus",
+            yaxis_title="Tuulesuund",
+            yaxis=dict(categoryorder="array", categoryarray=directions),
+            margin=dict(r=160),
+        )
+
+    return (
+        kpis,
+        fig_timeline,
+        fig_spec_noise_activity,
+        fig_spec_wind_heatmap,
+        fig_bar,
+        fig_peaks,
+        fig_scatter,
+    )
 
 
 if __name__ == "__main__":
