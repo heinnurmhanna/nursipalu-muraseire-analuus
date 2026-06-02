@@ -9,6 +9,8 @@ from dash import dcc, html, Input, Output
 
 from transform.schema import query_df
 
+from typing import List, Tuple
+
 app = dash.Dash(__name__, title="Nursipalu müraseire")
 server = app.server  # exposed for main.py
 
@@ -83,6 +85,383 @@ def _noise_class(avg_db, n):
         return 5
     return 6
 
+
+Span = Tuple[pd.Timestamp, pd.Timestamp, str]
+
+
+_SCHEDULE_LEVEL_COLOR = {
+    # ABSENT tähendab: müra puudub
+    "absent": "#dce9f7",
+
+    "low": "#dff0d8",
+    "madal": "#dff0d8",
+
+    "average": "#fff9c4",
+    "medium": "#fff9c4",
+    "keskmine": "#fff9c4",
+
+    "high": "#ffe5b4",
+    "kõrge": "#ffe5b4",
+    "korge": "#ffe5b4",
+
+    "very_high": "#f8d7da",
+    "very high": "#f8d7da",
+    "väga kõrge": "#f8d7da",
+    "vaga kõrge": "#f8d7da",
+    "vaga korge": "#f8d7da",
+}
+
+_NO_ACTIVITY_COLOR = "#eeeeee"
+_SCHEDULE_FALLBACK_COLOR = "#f0f0f0"
+
+
+def _schedule_level_color(level) -> str:
+    """Tagastab planned_noise_level väärtusele vastava taustavärvi."""
+    if level is None or (isinstance(level, float) and math.isnan(level)):
+        return _SCHEDULE_FALLBACK_COLOR
+
+    return _SCHEDULE_LEVEL_COLOR.get(
+        str(level).strip().lower(),
+        _SCHEDULE_FALLBACK_COLOR,
+    )
+
+
+def _merge_schedule_spans(spans: List[Span]) -> List[Span]:
+    """
+    Ühendab järjestikused või kattuvad sama värviga perioodid.
+    See vähendab vrect-ide arvu ja teeb Plotly joonise kiiremaks.
+    """
+    if not spans:
+        return []
+
+    spans = sorted(spans, key=lambda s: s[0])
+    merged = [spans[0]]
+
+    for start, end, color in spans[1:]:
+        prev_start, prev_end, prev_color = merged[-1]
+
+        if color == prev_color and start <= prev_end:
+            merged[-1] = (prev_start, max(prev_end, end), prev_color)
+        else:
+            merged.append((start, end, color))
+
+    return merged
+
+
+def _schedule_spans_from_schedule(
+    schedule_df: pd.DataFrame,
+    t_min: pd.Timestamp,
+    t_max: pd.Timestamp,
+) -> List[Span]:
+    """
+    Loob taustaperioodid schedule tabeli põhjal.
+    Kui mitu tegevust kattuvad, valib kõrgema mürataseme prioriteedi:
+    VERY_HIGH > HIGH > AVERAGE > LOW > ABSENT.
+    """
+    if schedule_df is None or schedule_df.empty:
+        return []
+
+    required_cols = {
+        "activity_start_utc",
+        "activity_end_utc",
+        "planned_noise_level",
+    }
+
+    if not required_cols.issubset(schedule_df.columns):
+        return []
+
+    sched = schedule_df.copy()
+    sched["start"] = pd.to_datetime(sched["activity_start_utc"], errors="coerce")
+    sched["end"] = pd.to_datetime(sched["activity_end_utc"], errors="coerce")
+    sched = sched.dropna(subset=["start", "end", "planned_noise_level"])
+
+    sched = sched[
+        (sched["end"] >= t_min) &
+        (sched["start"] <= t_max)
+    ].copy()
+
+    if sched.empty:
+        return []
+
+    sched["start"] = sched["start"].clip(lower=t_min)
+    sched["end"] = sched["end"].clip(upper=t_max)
+
+    priority = {
+        "absent": 0,
+        "low": 1,
+        "madal": 1,
+        "average": 2,
+        "medium": 2,
+        "keskmine": 2,
+        "high": 3,
+        "kõrge": 3,
+        "korge": 3,
+        "very_high": 4,
+        "very high": 4,
+        "väga kõrge": 4,
+        "vaga kõrge": 4,
+        "vaga korge": 4,
+    }
+
+    # Kõik algus- ja lõpuhetked, mille vahel tase ei muutu.
+    breakpoints = sorted(
+        set([t_min, t_max])
+        | set(sched["start"].tolist())
+        | set(sched["end"].tolist())
+    )
+
+    spans = []
+
+    for start, end in zip(breakpoints[:-1], breakpoints[1:]):
+        if start >= end:
+            continue
+
+        active = sched[
+            (sched["start"] < end) &
+            (sched["end"] > start)
+        ].copy()
+
+        if active.empty:
+            continue
+
+        active["level_key"] = (
+            active["planned_noise_level"]
+            .astype(str)
+            .str.strip()
+            .str.lower()
+        )
+
+        active["priority"] = active["level_key"].map(priority).fillna(-1)
+
+        selected = active.sort_values("priority", ascending=False).iloc[0]
+        color = _schedule_level_color(selected["planned_noise_level"])
+
+        spans.append((start, end, color))
+
+    return _merge_schedule_spans(spans)
+
+def _no_activity_spans_from_schedule(
+    schedule_df: pd.DataFrame,
+    t_min: pd.Timestamp,
+    t_max: pd.Timestamp,
+) -> List[Span]:
+    """
+    Loob taustaperioodid ajale, kus schedule tabelis ei ole ühtegi planeeritud tegevust.
+    See ei ole sama mis ABSENT: ABSENT tähendab planned_noise_level väärtust "müra puudub".
+    """
+    if t_min is None or t_max is None or pd.isna(t_min) or pd.isna(t_max):
+        return []
+
+    if schedule_df is None or schedule_df.empty:
+        return [(t_min, t_max, _NO_ACTIVITY_COLOR)]
+
+    required_cols = {
+        "activity_start_utc",
+        "activity_end_utc",
+    }
+
+    if not required_cols.issubset(schedule_df.columns):
+        return [(t_min, t_max, _NO_ACTIVITY_COLOR)]
+
+    sched = schedule_df.copy()
+    sched["start"] = pd.to_datetime(sched["activity_start_utc"], errors="coerce")
+    sched["end"] = pd.to_datetime(sched["activity_end_utc"], errors="coerce")
+    sched = sched.dropna(subset=["start", "end"])
+
+    sched = sched[
+        (sched["end"] >= t_min) &
+        (sched["start"] <= t_max)
+    ].copy()
+
+    if sched.empty:
+        return [(t_min, t_max, _NO_ACTIVITY_COLOR)]
+
+    sched["start"] = sched["start"].clip(lower=t_min)
+    sched["end"] = sched["end"].clip(upper=t_max)
+
+    activity_spans = sorted(
+        [(row["start"], row["end"]) for _, row in sched.iterrows()],
+        key=lambda s: s[0],
+    )
+
+    merged_activity_spans = []
+
+    for start, end in activity_spans:
+        if not merged_activity_spans:
+            merged_activity_spans.append((start, end))
+            continue
+
+        prev_start, prev_end = merged_activity_spans[-1]
+
+        if start <= prev_end:
+            merged_activity_spans[-1] = (prev_start, max(prev_end, end))
+        else:
+            merged_activity_spans.append((start, end))
+
+    no_activity_spans = []
+    cursor = t_min
+
+    for start, end in merged_activity_spans:
+        if start > cursor:
+            no_activity_spans.append((cursor, start, _NO_ACTIVITY_COLOR))
+
+        cursor = max(cursor, end)
+
+    if cursor < t_max:
+        no_activity_spans.append((cursor, t_max, _NO_ACTIVITY_COLOR))
+
+    return no_activity_spans
+
+
+def _schedule_spans_from_merged(merged_df: pd.DataFrame) -> List[Span]:
+    """
+    Varuvariant: kui schedule tabeli ridu pole, loob taustaperioodid merged vaatest.
+    See ei ole põhiallikas, sest merged on tunnipõhine koondvaade.
+    """
+    if merged_df is None or merged_df.empty:
+        return []
+
+    required_cols = {
+        "timestamp_utc",
+        "has_scheduled_activity",
+        "planned_noise_level",
+    }
+
+    if not required_cols.issubset(merged_df.columns):
+        return []
+
+    bucket = pd.Timedelta(hours=1)
+
+    act = merged_df[
+        merged_df["has_scheduled_activity"].astype(str).str.lower()
+        .isin(["true", "1", "yes"])
+    ].copy()
+
+    if act.empty:
+        return []
+
+    spans = []
+    for _, row in act.iterrows():
+        start = pd.to_datetime(row["timestamp_utc"], errors="coerce")
+        if pd.isna(start):
+            continue
+
+        spans.append((
+            start,
+            start + bucket,
+            _schedule_level_color(row.get("planned_noise_level")),
+        ))
+
+    return spans
+
+
+def build_schedule_noise_activity_figure(
+    merged_df: pd.DataFrame,
+    schedule_df: pd.DataFrame | None = None,
+) -> go.Figure:
+    """
+    Uus lisajoonis:
+    mõõdetud LAeq + planeeritud mürakategooriad schedule tabeli alusel.
+
+    NB! ABSENT tähendab planned_noise_level veerus: müra puudub.
+    """
+    fig = go.Figure()
+
+    if merged_df is None or merged_df.empty:
+        fig.update_layout(title="Andmed puuduvad")
+        return fig
+
+    if schedule_df is None:
+        schedule_df = pd.DataFrame()
+
+    t_min = pd.to_datetime(merged_df["timestamp_utc"].min())
+    t_max = pd.to_datetime(merged_df["timestamp_utc"].max())
+
+    schedule_spans = _schedule_spans_from_schedule(schedule_df, t_min, t_max)
+    no_activity_spans = _no_activity_spans_from_schedule(schedule_df, t_min, t_max)
+
+    # Taustaks lisame ka perioodid, kus planeeritud tegevusi ei ole.
+    spans = []
+    spans.extend(no_activity_spans)
+    spans.extend(schedule_spans)
+
+    # Kui schedule tabelist ei õnnestu perioode saada, kasuta varuvariandina merged vaadet.
+    if not schedule_spans:
+        spans.extend(_schedule_spans_from_merged(merged_df))
+
+    spans = _merge_schedule_spans(spans)
+
+    for start, end, color in spans:
+        fig.add_vrect(
+            x0=start,
+            x1=end,
+            fillcolor=color,
+            layer="below",
+            line_width=0,
+        )
+
+    fig.add_trace(go.Scatter(
+        x=pd.to_datetime(merged_df["timestamp_utc"]),
+        y=merged_df["laeq_db"],
+        mode="lines",
+        name="Mõõdetud müratase LAeq",
+        line=dict(color="#2196F3", width=2),
+        showlegend=False,
+    ))
+
+    fig.add_hline(
+        y=65,
+        line_dash="dash",
+        line_color="#555555",
+        line_width=2,
+        annotation_text="Ld = 65 dB",
+        annotation_position="top right",
+    )
+
+    legend_items = [
+    ("Müra puudub", "#dce9f7"),
+    ("Madal", "#dff0d8"),
+    ("Keskmine", "#fff9c4"),
+    ("Kõrge", "#ffe5b4"),
+    ("Väga kõrge", "#f8d7da"),
+    
+    ("Planeeritud tegevusi ei ole", _NO_ACTIVITY_COLOR),
+    ]
+
+    for label, color in legend_items:
+        fig.add_trace(go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(size=12, color=color, symbol="square"),
+            name=label,
+            showlegend=True,
+        ))
+
+    fig.add_trace(go.Scatter(
+        x=[None],
+        y=[None],
+        mode="lines",
+        line=dict(color="#555555", width=2, dash="dash"),
+        name="Ld = 65 dB",
+        showlegend=False,
+    ))
+
+    fig.update_layout(
+        xaxis_title="Aeg (UTC)",
+        yaxis_title="Müratase LAeq (dB)",
+        legend_title="Planeeritud mürakategooria",
+        legend=dict(
+            x=1.02,
+            y=1,
+            xanchor="left",
+            yanchor="top",
+        ),
+        margin=dict(r=260),
+    )
+
+    return fig
+
 app.layout = html.Div(
     style={"fontFamily": "sans-serif", "maxWidth": "1300px", "margin": "0 auto", "padding": "1rem"},
     children=[
@@ -109,6 +488,9 @@ app.layout = html.Div(
         html.H2("Müraseirejaama mõõdetud müratase ja Nursipalu harjutusvälja planeeritud mürakategooriad"),
         dcc.Graph(id="spec-noise-activity"),
 
+        html.H2("Mõõdetud müratase ja planeeritud mürakategooriad schedule tabeli põhjal"),
+        dcc.Graph(id="schedule-noise-activity"),
+
         html.H2("Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi"),
         dcc.Graph(id="spec-wind-heatmap"),        
 
@@ -128,6 +510,7 @@ app.layout = html.Div(
     Output("kpi-cards", "children"),
     Output("noise-timeline", "figure"),
     Output("spec-noise-activity", "figure"),
+    Output("schedule-noise-activity", "figure"),
     Output("spec-wind-heatmap", "figure"),
     Output("noise-by-activity", "figure"),
     Output("peak-events", "figure"),
@@ -144,12 +527,39 @@ def update_charts(start_date, end_date):
 
     df = query_df(f"SELECT * FROM merged {where} ORDER BY timestamp_utc")
 
+    schedule_where = "WHERE 1=1"
 
+    if start_date:
+        schedule_where += f" AND activity_end_utc >= '{start_date}'"
+
+    if end_date:
+        schedule_where += f" AND activity_start_utc <= '{end_date} 23:59:59'"
+
+    schedule_df = query_df(
+        f"""
+        SELECT
+            activity_start_utc,
+            activity_end_utc,
+            planned_noise_level
+        FROM schedule
+        {schedule_where}
+        ORDER BY activity_start_utc
+        """
+    )
 
     empty_fig = go.Figure().update_layout(title="Andmed puuduvad")
 
     if df.empty:
-        return [html.P("Andmed puuduvad")], empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, empty_fig
+        return (
+            [html.P("Andmed puuduvad")],
+            empty_fig,
+            empty_fig,
+            empty_fig,
+            empty_fig,
+            empty_fig,
+            empty_fig,
+            empty_fig,
+        )
 
     with_act = df[df["has_scheduled_activity"] == True]
     without_act = df[df["has_scheduled_activity"] == False]
@@ -367,6 +777,11 @@ def update_charts(start_date, end_date):
     
     fig_spec_noise_activity = go.Figure()
 
+    fig_schedule_noise_activity = build_schedule_noise_activity_figure(
+        df,
+        schedule_df,
+    )
+
     # Filtreerib välja read, kus on planeeritud tegevus.
     # Väärtused teisendatakse tekstiks, et töötaks nii True, "true", "1" kui ka "yes" korral.
     activity_spec_df = df[
@@ -572,12 +987,12 @@ def update_charts(start_date, end_date):
         kpis,
         fig_timeline,
         fig_spec_noise_activity,
+        fig_schedule_noise_activity,
         fig_spec_wind_heatmap,
         fig_bar,
         fig_peaks,
         fig_scatter,
     )
-
 
 if __name__ == "__main__":
     from transform.schema import init_schema
