@@ -1,23 +1,6 @@
 # NURSIPALU MÜRASEIRE, HARJUTUSGRAAFIKU JA ILMASTIKUANDMETE KÕRVUTAMINE
 Andmetöövoog Nursipalu harjutusvälja graafiku, müraseire ja ilmastikuandmete kõrvutamiseks.
 
-# SPRINT 1 
-
-# TO-DO #
-Hanna: 
-1. Uurida müraseirejaama andmete allika asukohta
-2. Teha githubis täiendused
-
-Roland: 
-1. Moodlesse esitada küsimus kasutatava tarkvara kohta
-2. Anda esialgsed suunised tiimile andmete kogumise kohta
-
-Raili: 
-1. Luua andmeskeem
-
-Aldo ja Hanna: 
-1. Toetada Rolandit ning vaadata, kas tehnilisi katsetusi
-
 ## Projekti kirjeldus
 
 Projekti eesmärk on luua otsast-lõpuni andmetöövoog, mis kogub ja ühendab Nursipalu müraseirejaama mõõtmised, Kaitseväe harjutusvälja graafiku ning ilmastikuandmed. Andmete põhjal luuakse näidikulaud, mille abil saab hinnata, kas harjutusvälja planeeritud tegevused ja ilmastikutingimused langevad kokku mõõdetud mürataseme muutustega.
