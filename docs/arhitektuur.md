@@ -8,9 +8,9 @@ Kas Nursipalu harjutusvälja graafikus planeeritud tegevused ja samaaegsed ilmas
 
 | Mõõdik | Kirjeldus |
 |---|---|
-| Keskmine müratase tegevusega vs. tegevuseta perioodidel | Võrdleb mürataset planeeritud harjutuste ajal ja nende puudumisel |
+| Mõõdetud müratase vs planeeritud mürakategooria | Võrdleb mõõdetud mürataset harjutusvälja graafikus planeeritud mürakategooriatega |
 | Mürataseme tõusu juhtumite ajaline kattuvus graafiku tegevustega | Mitu % mürataseme tõusudest langeb kokku planeeritud tegevusega |
-| Tuulekiiruse ja mürataseme korrelatsioon | Hindab, kas tuul võib mürataset mõjutada |
+| Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi | Võimaldab hinnata võimalikku seost tuulesuuna, -kiiruse ja mõõdetud mürataseme vahel |
 
 ---
 
