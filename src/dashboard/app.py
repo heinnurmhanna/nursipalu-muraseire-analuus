@@ -361,7 +361,7 @@ def build_schedule_noise_activity_figure(
 ) -> go.Figure:
     """
     Uus lisajoonis:
-    mõõdetud LAeq + planeeritud mürakategooriad schedule tabeli alusel.
+    mõõdetud LAFeq + planeeritud mürakategooriad schedule tabeli alusel.
 
     NB! ABSENT tähendab planned_noise_level veerus: müra puudub.
     """
@@ -375,8 +375,8 @@ def build_schedule_noise_activity_figure(
         schedule_df = pd.DataFrame()
 
     t_min = pd.to_datetime(merged_df["timestamp_utc"].min())
-    t_max = pd.to_datetime(merged_df["timestamp_utc"].max())
-
+    t_max = pd.to_datetime(merged_df["timestamp_utc"].max()) + pd.Timedelta(hours=1)
+    
     schedule_spans = _schedule_spans_from_schedule(schedule_df, t_min, t_max)
     no_activity_spans = _no_activity_spans_from_schedule(schedule_df, t_min, t_max)
 
@@ -404,7 +404,7 @@ def build_schedule_noise_activity_figure(
         x=pd.to_datetime(merged_df["timestamp_utc"]),
         y=merged_df["laf_eq_db"],
         mode="lines",
-        name="Mõõdetud müratase LAeq",
+        name="Mõõdetud müratase LAFeq",
         line=dict(color="#2196F3", width=2),
         showlegend=False,
     ))
@@ -449,7 +449,7 @@ def build_schedule_noise_activity_figure(
 
     fig.update_layout(
         xaxis_title="Aeg (UTC)",
-        yaxis_title="Müratase LAeq (dB)",
+        yaxis_title="Müratase LAFeq (dB)",
         legend_title="Planeeritud mürakategooria",
         legend=dict(
             x=1.02,
@@ -457,7 +457,7 @@ def build_schedule_noise_activity_figure(
             xanchor="left",
             yanchor="top",
         ),
-        margin=dict(r=260),
+        margin=dict(l=70, r=260, t=20, b=70),
     )
 
     return fig
@@ -471,6 +471,20 @@ app.layout = html.Div(
             style={"color": "#555"},
         ),
 
+        html.P(
+            [
+                html.Strong("LAFeq"),
+                " – etteantud ajavahemikus mõõdetud ekvivalentne ehk keskmine helirõhutase, "
+                "mille mõõtmisel kasutatakse A-korrektsiooni ning mis iseloomustab muutuva tasemega müra."
+            ],
+            style={
+                "color": "#555",
+                "fontSize": "0.95rem",
+                "marginTop": "-0.5rem",
+                "marginBottom": "2rem",
+            },
+        ),
+
         html.Div([
             html.Label("Ajavahemik:"),
             dcc.DatePickerRange(
@@ -478,43 +492,52 @@ app.layout = html.Div(
                 display_format="YYYY-MM-DD",
                 style={"marginLeft": "0.5rem"},
             ),
-        ], style={"marginBottom": "1.5rem"}),
+        ], style={"marginBottom": "2rem"}),
 
-        html.Div(id="kpi-cards", style={"display": "flex", "flexWrap": "wrap", "gap": "1rem", "marginBottom": "1.5rem"}),
-
-        html.H2("Müratase ajas koos harjutuste ja tuulekiirusega"),
-        dcc.Graph(id="noise-timeline"),
+        html.Div(id="kpi-cards", style={"display": "flex", "flexWrap": "wrap", "gap": "1rem", "marginBottom": "2rem"}),
 
         html.H2("Müraseirejaama mõõdetud müratase ja Nursipalu harjutusvälja planeeritud mürakategooriad"),
-        dcc.Graph(id="spec-noise-activity"),
-
-        html.H2("Mõõdetud müratase ja planeeritud mürakategooriad schedule tabeli põhjal"),
+        html.P(
+            "Joonis näitab, missugune on tegelikult mõõdetud LAFeq võrreldes "
+            "harjutusvälja graafikus planeeritud mürakategooriatega. Lisaks on "
+            "võimalik näha, millal mõõdetud müratase on ületanud kriitilise taseme 65 dB.",
+            style={
+                "color": "#555",
+                "fontSize": "0.95rem",
+                "marginTop": "0",
+                "marginBottom": "0.75rem",
+                "maxWidth": "1000px",
+            },
+        ),
         dcc.Graph(id="schedule-noise-activity"),
 
         html.H2("Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi"),
+        html.P(
+            "Joonis annab ülevaate, missuguse tuule suuna ja tuulekiiruse ajal "
+            "registreeris müraseirejaam kõrgemaid või madalamaid müratasemeid.",
+            style={
+                "color": "#555",
+                "fontSize": "0.95rem",
+                "marginTop": "0",
+                "marginBottom": "0.75rem",
+                "maxWidth": "1000px",
+            },
+        ),
         dcc.Graph(id="spec-wind-heatmap"),        
 
-        html.H2("Keskmine müratase: tegevusega vs. tegevuseta"),
-        dcc.Graph(id="noise-by-activity"),
+        #html.H2("Tipptaseme sündmused ja planeeritud tegevused"),
+        #dcc.Graph(id="peak-events"),
 
-        html.H2("Tipptaseme sündmused ja planeeritud tegevused"),
-        dcc.Graph(id="peak-events"),
-
-        html.H2("Tuulekiiruse ja -suuna seos planeeritud tegevuste ning müratasemega"),
-        dcc.Graph(id="wind-noise-scatter"),
+        
     ],
 )
 
 
 @app.callback(
     Output("kpi-cards", "children"),
-    Output("noise-timeline", "figure"),
-    Output("spec-noise-activity", "figure"),
     Output("schedule-noise-activity", "figure"),
     Output("spec-wind-heatmap", "figure"),
-    Output("noise-by-activity", "figure"),
-    Output("peak-events", "figure"),
-    Output("wind-noise-scatter", "figure"),
+    #Output("peak-events", "figure"),
     Input("date-range", "start_date"),
     Input("date-range", "end_date"),
 )
@@ -554,11 +577,8 @@ def update_charts(start_date, end_date):
             [html.P("Andmed puuduvad")],
             empty_fig,
             empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
+            #empty_fig,
+            
         )
 
     with_act = df[df["has_scheduled_activity"] == True]
@@ -594,114 +614,15 @@ def update_charts(start_date, end_date):
         overlap_pct = 0
 
     kpis = [
-        _kpi_card("LAeq tegevusega", _fmt_db(avg_laeq_with)),
-        _kpi_card("LAeq tegevuseta", _fmt_db(avg_laeq_without)),                
-        _kpi_card("LCeq tegevusega", _fmt_db(avg_lceq_with)),
-        _kpi_card("LCeq tegevuseta", _fmt_db(avg_lceq_without)),
-        _kpi_card("Planeeritud tegevuse tunnid", str(activity_hours)),
-        _kpi_card("Tipptaseme tunnid", f"{peak_rate:.0f}%"),
-        _kpi_card("Müratõusude kattuvus tegevustega",f"{overlap_pct:.0f}%"),
+        _kpi_card("LAFeq ≥ 65 dB tundide kattuvus planeeritud tegevustega",f"{overlap_pct:.0f}%"),
     ]
 
-    # --- Chart 1: noise timeline (LAeq, LCeq, LZeq) ---
-    fig_timeline = go.Figure()
-
-    for col, label, color in [
-        ("laeq_db", "LAeq", "#2196F3"),
-        ("laf_eq_db", "LAFeq", "#00BCD4"),
-        ("lceq_db", "LCeq", "#FF9800"),
-        ("lzeq_db", "LZeq", "#9C27B0"),
-    ]:
-        if col in df.columns:
-            fig_timeline.add_trace(go.Scatter(
-                x=df["timestamp_utc"],
-                y=df[col],
-                mode="lines",
-                name=label,
-                line=dict(color=color),
-            ))
-
-    # Lisa tuulekiirus samale graafikule paremale Y-teljele
-    if "wind_speed_ms" in df.columns:
-        fig_timeline.add_trace(go.Scatter(
-            x=df["timestamp_utc"],
-            y=df["wind_speed_ms"],
-            mode="lines",
-            name="Tuulekiirus (m/s)",
-            yaxis="y2",
-            line=dict(color="#4CAF50", dash="dot"),
-        ))
-
-    # Shade scheduled-activity periods
-    activity_df = df[
-        df["has_scheduled_activity"].astype(str).str.lower().isin(["true", "1", "yes"])
-    ].copy()
-
-    print("Scheduled activity rows:", len(activity_df))
-
-    # Lisa legendi kirje planeeritud harjutuse jaoks
-    if not activity_df.empty:
-        fig_timeline.add_trace(go.Scatter(
-            x=[None],
-            y=[None],
-            mode="markers",
-            marker=dict(
-                size=12,
-                color="rgba(244,67,54,0.35)",
-                symbol="square",
-            ),
-            name="Planeeritud harjutus",
-            showlegend=True,
-        ))
-
-    # Lisa punased taustaalad
-    for _, row in activity_df.iterrows():
-        start = pd.to_datetime(row["timestamp_utc"])
-        end = start + pd.Timedelta(hours=1)
-
-        fig_timeline.add_vrect(
-            x0=start,
-            x1=end,
-            fillcolor="rgba(244,67,54,0.35)",
-            layer="below",
-            line_width=0,
-        )
-
-    fig_timeline.update_layout(
-        xaxis_title="Aeg (UTC)",
-        yaxis=dict(
-            title="Müratase (dB)",
-        ),
-        yaxis2=dict(
-            title="Tuulekiirus (m/s)",
-            overlaying="y",
-            side="right",
-            showgrid=False,
-        ),
-        legend=dict(
-            title="Mõõt",
-            x=1.08,
-            y=1,
-            xanchor="left",
-            yanchor="top",
-        ),
-        margin=dict(r=260),
+    fig_schedule_noise_activity = build_schedule_noise_activity_figure(
+        df,
+        schedule_df,
     )
-
-    # --- Chart 2: bar — activity vs non-activity for all three metrics ---
-    bar_data = []
-    for col, label in [("laeq_db", "LAeq"), ("lceq_db", "LCeq"), ("lzeq_db", "LZeq")]:
-        if col not in df.columns:
-            continue
-        bar_data.append({"Mõõt": label, "Periood": "Tegevusega",  "dB": leq_avg(with_act[col])})
-        bar_data.append({"Mõõt": label, "Periood": "Tegevuseta", "dB": leq_avg(without_act[col])})
-
-    bar_df = pd.DataFrame(bar_data).dropna(subset=["dB"])
-    fig_bar = px.bar(
-        bar_df, x="Mõõt", y="dB", color="Periood", barmode="group",
-        labels={"dB": "Energeetiline keskmine (dB)"},
-        color_discrete_map={"Tegevusega": "#F44336", "Tegevuseta": "#2196F3"},
-    )
+    
+ 
 
     # --- Chart 3: peak events timeline ---
     fig_peaks = go.Figure()
@@ -720,138 +641,14 @@ def update_charts(start_date, end_date):
         mode="markers", name="Tipptaseme sündmus",
         marker=dict(color="red", size=8, symbol="circle"),
     ))
-    fig_peaks.update_layout(xaxis_title="Aeg (UTC)", yaxis_title="dB")
+    fig_peaks.update_layout(
+        xaxis_title="Aeg (UTC)", 
+        yaxis_title="dB",
+        margin=dict(l=70, r=160, t=20, b=70),)
 
-    # --- Chart 4: wind speed vs LAeq, with weather/activity context ---
-    scatter_df = df.dropna(subset=["wind_speed_ms", "laeq_db"]).copy()
 
-    # Tee väärtused loetavamaks
-    scatter_df["Planeeritud tegevus"] = scatter_df["has_scheduled_activity"].map({
-        True: "Jah",
-        False: "Ei",
-    })
 
-    scatter_df["Tuulesuund"] = scatter_df["downwind_category"].map({
-        "downwind": "Allatuult",
-        "crosswind": "Külgtuul",
-        "upwind": "Vastutuul",
-    }).fillna(scatter_df["downwind_category"])
-
-    fig_scatter = px.scatter(
-        scatter_df,
-        x="wind_speed_ms",
-        y="laeq_db",
-        color="Tuulesuund",
-        symbol="Planeeritud tegevus",
-        trendline="ols",
-        labels={
-            "wind_speed_ms": "Tuulekiirus (m/s)",
-            "laeq_db": "LAeq müratase (dB)",
-            "Tuulesuund": "Tuulesuund",
-            "Planeeritud tegevus": "Planeeritud tegevus",
-        },
-        hover_data={
-            "timestamp_utc": True,
-            "wind_speed_ms": ":.1f",
-            "laeq_db": ":.1f",
-            "Tuulesuund": True,
-            "Planeeritud tegevus": True,
-        },
-        color_discrete_map={
-            "Allatuult": "#F44336",
-            "Külgtuul": "#FF9800",
-            "Vastutuul": "#2196F3",
-        },
-        opacity=0.75,
-    )
-
-    fig_scatter.update_traces(marker=dict(size=9))
-
-    fig_scatter.update_layout(
-        xaxis_title="Tuulekiirus (m/s)",
-        yaxis_title="LAeq müratase (dB)",
-        legend_title="Tuulesuund / tegevus",
-        margin=dict(r=220),
-    )
-
-    # --- New spec visual 1: LAFeq + planned noise categories + 65 dB threshold ---
     
-    fig_spec_noise_activity = go.Figure()
-
-    fig_schedule_noise_activity = build_schedule_noise_activity_figure(
-        df,
-        schedule_df,
-    )
-
-    # Filtreerib välja read, kus on planeeritud tegevus.
-    # Väärtused teisendatakse tekstiks, et töötaks nii True, "true", "1" kui ka "yes" korral.
-    activity_spec_df = df[
-        df["has_scheduled_activity"].astype(str).str.lower().isin(["true", "1", "yes"])
-    ].copy()
-
-    # Lisab graafikule planeeritud tegevuste perioodid taustavärvina.
-    for _, row in activity_spec_df.iterrows():
-        start = pd.to_datetime(row["timestamp_utc"])
-        end = start + pd.Timedelta(hours=1)
-        planned_level = row.get("planned_noise_level", None)
-
-        fig_spec_noise_activity.add_vrect(
-            x0=start,
-            x1=end,
-            fillcolor=_planned_noise_color(planned_level),
-            layer="below",
-            line_width=0,
-        )
-
-    # Lisab mõõdetud mürataseme joone.
-    fig_spec_noise_activity.add_trace(go.Scatter(
-        x=df["timestamp_utc"],
-        y=df["laf_eq_db"],
-        mode="lines",
-        name="Mõõdetud müratase LAFeq",
-        line=dict(color="#2196F3", width=2),
-    ))
-
-    # Lisab 65 dB võrdluspiiri.
-    fig_spec_noise_activity.add_hline(
-        y=65,
-        line_dash="dash",
-        line_color="#555555",
-        line_width=2,
-        annotation_text="Ld = 65 dB",
-        annotation_position="top right",
-    )
-
-    # Lisab legendi
-    for label, color in [
-        ("Madal", "#DFF0D8"),
-        ("Keskmine", "#FFF3CD"),
-        ("Kõrge", "#FFE5B4"),
-        ("Väga kõrge", "#F8D7DA"),
-        ("Müra puudub", "#E9ECEF")
-    ]:
-        fig_spec_noise_activity.add_trace(go.Scatter(
-            x=[None],
-            y=[None],
-            mode="markers",
-            marker=dict(size=12, color=color, symbol="square"),
-            name=label,
-            showlegend=True,
-        ))
-
-    fig_spec_noise_activity.update_layout(
-        xaxis_title="Aeg (UTC)",
-        yaxis_title="Müratase LAFeq (dB)",
-        legend_title="Mõõt / Müra kategooria",
-        legend=dict(
-            x=1.02,
-            y=1,
-            xanchor="left",
-            yanchor="top",
-        ),
-        margin=dict(r=260),
-    )
-
     # --- New spec visual 2: heatmap wind direction / wind speed vs LAFeq ---
     noise_col = "laf_eq_db"
 
@@ -981,18 +778,15 @@ def update_charts(start_date, end_date):
             xaxis_title="Tuulekiirus",
             yaxis_title="Tuulesuund",
             yaxis=dict(categoryorder="array", categoryarray=directions),
-            margin=dict(r=160),
+            margin=dict(l=70, r=160, t=20, b=70),
         )
 
     return (
         kpis,
-        fig_timeline,
-        fig_spec_noise_activity,
+        
         fig_schedule_noise_activity,
         fig_spec_wind_heatmap,
-        fig_bar,
-        fig_peaks,
-        fig_scatter,
+        #fig_peaks,
     )
 
 if __name__ == "__main__":
