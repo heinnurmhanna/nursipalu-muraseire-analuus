@@ -1,36 +1,42 @@
 # NURSIPALU MÜRASEIRE, HARJUTUSGRAAFIKU JA ILMASTIKUANDMETE KÕRVUTAMINE
 Andmetöövoog Nursipalu harjutusvälja graafiku, müraseire ja ilmastikuandmete kõrvutamiseks.
 
-## Projekti kirjeldus
-
-Projekti eesmärk on luua otsast-lõpuni andmetöövoog, mis kogub ja ühendab Nursipalu müraseirejaama mõõtmised, Kaitseväe harjutusvälja graafiku ning ilmastikuandmed. Andmete põhjal luuakse näidikulaud, mille abil saab hinnata, kas harjutusvälja planeeritud tegevused ja ilmastikutingimused langevad kokku mõõdetud mürataseme muutustega.
-
-Projekti tulemusena valmib andmetöövoog, mis:
-
-- kogub andmeid avalikest ja ajas muutuvatest andmeallikatest;
-- puhastab ja teisendab andmed analüüsiks sobivale kujule;
-- ühendab müraseire, harjutusgraafiku ja ilmastikuandmed ühise ajatelje alusel;
-- kontrollib andmete kvaliteeti;
-- kuvab tulemused näidikulaual;
-- aitab teha järelduse, kas selline andmete kõrvutamine on tulemuslik.
-
-Projekt ei eelda, et andmete vahel leitakse kindel põhjuslik seos. Peamine eesmärk on hinnata, kas erinevate avalike andmeallikate ajapõhine kõrvutamine annab tõlgendatavaid ja kasulikke tulemusi.
-
 ## Äriküsimus
 
 Kas Nursipalu harjutusvälja graafikus planeeritud tegevused ja samaaegsed ilmastikutingimused on seotud müraseirejaamas mõõdetud mürataseme tõusudega?
 
-Näidikulaud aitab vastata näiteks järgmistele küsimustele:
-- Kui palju kõrgem on keskmine müratase perioodidel, kus harjutusväljal toimub planeeritud tegevus?
-- Kui sageli langevad mürataseme tipud ajaliselt kokku harjutusgraafikus märgitud tegevustega?
-- Kas teatud ilmastikutingimused (näiteks tugev tuul või kindel tuulesuund) mõjutavad mõõdetud mürataset?
+**Mõõdikud:**
 
-Võimalikud KPI-d või mõõdikud näidikulaual:
-- keskmine müratase tegevusega vs tegevuseta perioodil;
-- mürataseme tõusude arv nädalas või päevas;
-- planeeritud harjutuste ja müratippude ajalise kattuvuse protsent.
+1. [Mitu % mürataseme tõusudest langeb kokku planeeritud tegevustega]
+2. [Mõõdetud mürataseme võrdlus harjutusvälja graafikus planeeritud mürakategooriatega]
+3. [Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi]
 
-## Andmeallikad
+## Arhitektuur 
+
+```mermaid
+flowchart TD
+    A[Nursipalu müraseire API\nnoise.ellegroup.eu] -->|HTTP GET| B[src/ingest/ingest_noise.py]
+    C[Kaitseväe graafiku JSON\nmil.ee] -->|HTTP GET| D[src/ingest/ingest_schedule.py]
+    E[Open-Meteo ilmaandmete API] -->|HTTP GET| F[src/ingest/ingest_weather.py]
+
+    B --> G[data/raw/noise.csv]
+    D --> H[data/raw/schedule.json]
+    F --> I[data/raw/weather.csv]
+
+    G --> J[src/transform/transform.py]
+    H --> J
+    I --> J
+
+    J -->|Ühenda ajatelje alusel| K[data/processed/merged.csv]
+
+    K --> L[src/quality/quality_checks.py]
+    L -->|Testid läbitud| M[src/dashboard/app.py]
+    M --> N[Dash-näidikulaud]
+```
+
+---
+
+## Andmestik
 
 | Andmeallikas | Kirjeldus | Muutuvus ajas |
 |---|---|---|
@@ -44,47 +50,102 @@ Kasutatavad andmeallikad:
 - Kaitseväe harjutusvälja graafiku JSON: https://mil.ee/wp-content/uploads/training-grounds/training_ground_schedule.json
 - Ilmastikuandmed: näiteks Open-Meteo või muu avalik ilmaandmete allikas
 
-## Arhidektuuriskeem 
+## Stack
 
-Joonistage arhitektuuriskeem. Allikast lõpptulemini. Sobib Mermaid, draw.io, Excalidraw või käsitsi joonis + foto.
+| Komponent | Tööriist |
+|-----------|---------|
+| Sissevõtt | [Python / Airflow / muu] |
+| Transformatsioon | [SQL / dbt / muu] |
+| Andmehoidla | PostgreSQL |
+| Näidikulaud | [Superset / Streamlit / muu] |
+| Orkestreerimine | [Airflow / cron / muu] |
 
-## Tööülesanded
+## Käivitamine
 
-Hanna Heinnurm - projektijuht (teema algataja)
-Roland Pajuleht - transformatsioonide omanik (andmebaaside ülesseadmine, andmete projektijuht) 
-Raili Jäe - näidikulaua omanik
-Aldo Rääbis - kvaliteedi omanik 
+```bash
+# 1. Klooni repo ja liigu kausta
+git clone <repo-url>
+cd <projekti-kaust>
 
-## Projekti riskid ja piirangud
+# 2. Kopeeri keskkonnamuutujad
+cp .env.example .env
+# Muuda .env failis paroolid ja muud seaded vastavalt vajadusele
 
-### Projekti riskid
-| Risk | Mõju | Maandus |
-|---|---|---|
-| Müraseire andmetele ligipääs on keeruline | Andmete sissevõtt võib venida | Kontrollida ligipääsu esimesel nädalal |
-| Andmeallikate ajagranulaarsus on erinev | Andmeid on keeruline võrrelda | Viia kõik andmed tunnipõhiseks |
-| Ajavööndid ei ühti | Võrdlus võib anda valesid tulemusi | Kasutada ühtset ajavööndit |
-| Harjutusgraafik kirjeldab planeeritud, mitte tegelikku tegevust | Seose tõlgendamine on piiratud | Kirjeldada see projekti piiranguna |
-| Ilmastikuandmed ei pärine täpselt samast asukohast | Tulemused võivad olla ligikaudsed | Dokumenteerida ilmaandmete allikas ja koordinaadid |
-| Selget seost ei ilmne | Tulemus võib tunduda nõrk | Rõhutada, et eesmärk on hinnata kõrvutamise tulemuslikkust |
+# 3. Käivita teenused
+docker compose up -d --build
 
-### Projekti piirangud
-- Harjutusvälja graafik näitab planeeritud tegevusi, mitte tingimata tegelikult toimunud tegevusi.
-- Müraseirejaam võib mõõta ka muid heliallikaid peale harjutusvälja tegevuse.
-- Ilmastikuandmed võivad pärineda lähimast mõõtepunktist või mudelandmetest.
-- Andmete kõrvutamisel ei pruugi ilmneda selget seost.
-- Projekt ei tõesta põhjuslikku seost, vaid loob andmetöövoo ja hindab ajapõhise kõrvutamise kasulikkust.
+# 4. [Vabatahtlik: käivita sissevõtt käsitsi esimesel korral]
+# docker compose exec pipeline python scripts/run_pipeline.py run-all
+```
 
-### Tehnilised katsetused 
-Tehke esimesed tehnilised katsetused. Kas API vastab? Kas saate andmebaasiga ühenduda? Kas valitud tööriistad jooksevad?
+Airflow (kui kasutatakse): http://localhost:8080 (kasutaja: airflow / parool: airflow)
+Näidikulaud: http://localhost
 
-#### Andmeallikate kontroll
+## Saladused ja konfiguratsioon
 
-- Kontrollida, kas müraseire avaandmetele saab programmiliselt ligi.
-- Kontrollida, kas Kaitseväe harjutusgraafiku JSON on koodiga loetav.
-- Valida sobiv ilmaandmete allikas.
-- Kontrollida, millised väljad on igas andmeallikas olemas.
-- Dokumenteerida andmeallikate struktuur.
-- Tuvastada võimalikud probleemid, näiteks puuduvad väärtused, erinevad ajavööndid ja erinev ajagranulaarsus.
+Kõik saladused (paroolid, API võtmed, andmebaasi URL-id) on `.env` failis. Repos on ainult `.env.example`, mis näitab vajalike muutujate struktuuri ilma tegelike väärtusteta. Päris `.env` faili ei tohi GitHubi panna - see on `.gitignore`-s.
+
+Vajalikud muutujad:
+
+| Muutuja | Tähendus | Näide |
+|---------|----------|-------|
+| `DB_PASSWORD` | PostgreSQL parool | (saladus) |
+| `[teised]` | ... | ... |
+
+## Andmevoog lühidalt
+
+1. **Sissevõtt** — [Kirjelda, kuidas andmed allikast kätte saadakse]
+2. **Laadimine** — Andmed laaditakse `staging` kihti
+3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]
+4. **Testimine** — [Mitu] andmekvaliteedi testi kontrollivad korrektsust
+5. **Näidikulaud** — [Kuvab müraseirejaamas mõõdetud mürataseme seoseid graafikus palneeritud tegevuste mürakategooriatega, samuti seost ilmastikuandmetega.]
+
+## Andmekvaliteedi testid
+
+Projekt kontrollib järgmist:
+
+1. [Test 1 - nt: kasutajate ID on unikaalne]
+2. [Test 2 - nt: tellimuse summa pole null]
+3. [Test 3 - nt: kuupäev jääb vahemikku 2020-2026]
+[Lisa rohkem, kui sul on]
+
+Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
+
+## Projekti struktuur
+
+```
+.
+├── README.md
+├── compose.yml
+├── .env.example
+├── .gitignore
+├── docs/
+│   ├── arhitektuur.md      ← nädal 1 väljund
+│   └── progress.md         ← nädal 2 väljund
+└── ...                     ← ülejäänud projektifailid
+```
+
+## Kokkuvõte, puudused ja võimalikud edasiarendused
+
+**Kokkuvõte:**
+- [Loetle, mis on lõpule viidud, mis töötab hästi]
+
+**Puudused:**
+- [Loetle ausalt, mis jäi tegemata - see ei mõjuta hinnet negatiivselt, vaid aitab hinnata]
+
+**Mis edasi:**
+- [Andmestikud võimaldavad uurida oluliselt põhjalikumalt võimalikke seoseid mõõdetud müra ja ilmastiku andmete vahel.]
+
+## Meeskond
+
+| Nimi | Roll |
+|------|------|
+| Hanna Heinnurm | projektijuht (teema algataja) |
+| Roland Pajuleht | transformatsioonide omanik (andmebaaside ülesseadmine, andmete projektijuht) |
+| Raili Jäe | näidikulaua omanik |
+| Aldo Rääbis | kvaliteedi omanik |
+
+
 
 ## Töö etapid 
 
