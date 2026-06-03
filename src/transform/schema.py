@@ -9,7 +9,7 @@ DB_PATH = os.getenv("DB_PATH", "data/nursipalu.duckdb")
 
 log = logging.getLogger(__name__)
 
-_NOISE_REQUIRED_COLS = {"cntp", "lceq_db", "lzeq_db", "lc_peak_db", "lz_peak_db", "wind_speed_ms"}
+_NOISE_REQUIRED_COLS = {"cntp",  "laeq_db", "laf_eq_db", "lceq_db", "lzeq_db", "lc_peak_db", "lz_peak_db", "wind_speed_ms"}
 
 
 def _migrate_noise(conn: duckdb.DuckDBPyConnection) -> None:
@@ -80,6 +80,7 @@ def init_schema() -> None:
 
                 -- A-weighted: general audible noise, environmental standard
                 laeq_db              DOUBLE,
+                laf_eq_db            DOUBLE,
                 la_max_db            DOUBLE,
 
                 -- C-weighted: heavy weapons, low-frequency sources
@@ -162,6 +163,7 @@ def init_schema() -> None:
 
                 -- Acoustic measurements
                 n.laeq_db,
+                n.laf_eq_db,
                 n.la_max_db,
                 n.lceq_db,
                 n.lc_peak_db,
