@@ -121,6 +121,7 @@ def run() -> None:
             "cntm":               _int(row.get("cntm")),
             "cntp":               _float(row.get("cntp")),
             "laeq_db":            _float(la_eq),
+            "laf_eq_db":          _float(row.get("laf_eq")),
             "la_max_db":          _float(row.get("la_max")),
             "lceq_db":            _float(row.get("lc_eq")),
             "lc_peak_db":         _float(row.get("lc_peak")),
@@ -164,6 +165,7 @@ def run() -> None:
             r["cntm"],
             r["cntp"],
             r["laeq_db"],
+            r["laf_eq_db"],
             r["la_max_db"],
             r["lceq_db"],
             r["lc_peak_db"],
@@ -187,11 +189,11 @@ def run() -> None:
             "INSERT INTO noise ("
             "  ingested_at, timestamp_utc, station_id,"
             "  cnt, cntm, cntp,"
-            "  laeq_db, la_max_db, lceq_db, lc_peak_db, lzeq_db, lz_peak_db,"
+            "  laeq_db, laf_eq_db, la_max_db, lceq_db, lc_peak_db, lzeq_db, lz_peak_db,"
             "  temperature_c, pressure_hpa, rain_mm, humidity_pct,"
             "  wind_direction_deg, wind_speed_ms,"
             "  source_url, raw_file"
-            ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             new_rows,
         )
         log.info("Inserted %d new rows (%d already covered)", len(new_rows), len(parsed) - len(new_rows))

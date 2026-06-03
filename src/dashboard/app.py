@@ -402,7 +402,7 @@ def build_schedule_noise_activity_figure(
 
     fig.add_trace(go.Scatter(
         x=pd.to_datetime(merged_df["timestamp_utc"]),
-        y=merged_df["laeq_db"],
+        y=merged_df["laf_eq_db"],
         mode="lines",
         name="Mõõdetud müratase LAeq",
         line=dict(color="#2196F3", width=2),
@@ -576,11 +576,11 @@ def update_charts(start_date, end_date):
     avg_lceq_with    = leq_avg(with_act["lceq_db"])
     avg_lceq_without = leq_avg(without_act["lceq_db"])
     peak_rate = (df["peak_event"] == True).sum() / max(len(df), 1) * 100
-    activity_hours = int((df["has_scheduled_activity"] == True).sum())
+    activity_hours = int((df["has_scheduled_activity"] == True).sum())    
 
     # Mürataseme tõusu kattuvus planeeritud tegevustega
-    noise_rise_threshold = 60
-    noise_rise_df = df[df["laeq_db"] >= noise_rise_threshold]
+    noise_rise_threshold = 65
+    noise_rise_df = df[df["laf_eq_db"] >= noise_rise_threshold]
 
     if len(noise_rise_df) > 0:
         overlap_pct = (
@@ -595,7 +595,7 @@ def update_charts(start_date, end_date):
 
     kpis = [
         _kpi_card("LAeq tegevusega", _fmt_db(avg_laeq_with)),
-        _kpi_card("LAeq tegevuseta", _fmt_db(avg_laeq_without)),
+        _kpi_card("LAeq tegevuseta", _fmt_db(avg_laeq_without)),                
         _kpi_card("LCeq tegevusega", _fmt_db(avg_lceq_with)),
         _kpi_card("LCeq tegevuseta", _fmt_db(avg_lceq_without)),
         _kpi_card("Planeeritud tegevuse tunnid", str(activity_hours)),
@@ -608,6 +608,7 @@ def update_charts(start_date, end_date):
 
     for col, label, color in [
         ("laeq_db", "LAeq", "#2196F3"),
+        ("laf_eq_db", "LAFeq", "#00BCD4"),
         ("lceq_db", "LCeq", "#FF9800"),
         ("lzeq_db", "LZeq", "#9C27B0"),
     ]:
@@ -773,7 +774,7 @@ def update_charts(start_date, end_date):
         margin=dict(r=220),
     )
 
-    # --- New spec visual 1: LAeq + planned noise categories + 65 dB threshold ---
+    # --- New spec visual 1: LAFeq + planned noise categories + 65 dB threshold ---
     
     fig_spec_noise_activity = go.Figure()
 
@@ -805,9 +806,9 @@ def update_charts(start_date, end_date):
     # Lisab mõõdetud mürataseme joone.
     fig_spec_noise_activity.add_trace(go.Scatter(
         x=df["timestamp_utc"],
-        y=df["laeq_db"],
+        y=df["laf_eq_db"],
         mode="lines",
-        name="Mõõdetud müratase LAeq",
+        name="Mõõdetud müratase LAFeq",
         line=dict(color="#2196F3", width=2),
     ))
 
@@ -840,7 +841,7 @@ def update_charts(start_date, end_date):
 
     fig_spec_noise_activity.update_layout(
         xaxis_title="Aeg (UTC)",
-        yaxis_title="Müratase LAeq (dB)",
+        yaxis_title="Müratase LAFeq (dB)",
         legend_title="Mõõt / Müra kategooria",
         legend=dict(
             x=1.02,
@@ -851,8 +852,8 @@ def update_charts(start_date, end_date):
         margin=dict(r=260),
     )
 
-    # --- New spec visual 2: heatmap wind direction / wind speed vs LAeq ---
-    noise_col = "laeq_db"
+    # --- New spec visual 2: heatmap wind direction / wind speed vs LAFeq ---
+    noise_col = "laf_eq_db"
 
     # Leiame tuulesuuna veeru.
     if "wind_direction" in df.columns:
@@ -970,7 +971,7 @@ def update_charts(start_date, end_date):
                 "<extra></extra>"
             ),
             colorbar=dict(
-                title="Keskmine LAeq",
+                title="Keskmine LAFeq",
                 tickvals=[0, 1, 2, 3, 4, 5, 6],
                 ticktext=["n < 5", "<45", "45–50", "50–55", "55–60", "60–65", ">65"],
             ),
