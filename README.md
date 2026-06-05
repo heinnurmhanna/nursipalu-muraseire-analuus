@@ -48,7 +48,7 @@ Kasutatavad andmeallikad:
 
 - Nursipalu müraseire avaandmed: https://noise.ellegroup.eu/public/1
 - Kaitseväe harjutusvälja graafiku JSON: https://mil.ee/wp-content/uploads/training-grounds/training_ground_schedule.json
-- Ilmastikuandmed: näiteks Open-Meteo või muu avalik ilmaandmete allikas
+- Ilmastikuandmed: Open-Meteo
 
 ## Stack
 
@@ -57,7 +57,7 @@ Kasutatavad andmeallikad:
 | Sissevõtt | Python, Requests |
 | Transformatsioon | SQL, Python |
 | Andmehoidla | DuckDB |
-| Seirepaneel | Dash, Plotly |
+| Näidikulaud | Dash, Plotly |
 | Orkestreerimine | APScheduler |
 | Testimine | pytest |
 | Käivitamine | Docker Compose |
@@ -89,7 +89,7 @@ Vajalikud või kasutatavad muutujad:
 | Muutuja | Tähendus | Näide / vaikimisi väärtus |
 |---------|----------|---------------------------|
 | `DB_PATH` | DuckDB andmebaasi asukoht | `data/nursipalu.duckdb` |
-| `DASH_PORT` | Dash seirepaneeli port | `8050` |
+| `DASH_PORT` | Dash näidikulaua port | `8050` |
 | `NOISE_INTERVAL_HOURS` | Müraandmete uuendamise intervall tundides | `1` |
 | `SCHEDULE_INTERVAL_HOURS` | Ajakava uuendamise intervall tundides | `1` |
 | `WEATHER_INTERVAL_HOURS` | Ilmaandmete uuendamise intervall tundides | `1` |
