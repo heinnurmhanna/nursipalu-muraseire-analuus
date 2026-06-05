@@ -7,9 +7,9 @@ Kas Nursipalu harjutusvälja graafikus planeeritud tegevused ja samaaegsed ilmas
 
 **Mõõdikud:**
 
-1. [Mitu % mürataseme tõusudest langeb kokku planeeritud tegevustega]
-2. [Mõõdetud mürataseme võrdlus harjutusvälja graafikus planeeritud mürakategooriatega]
-3. [Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi]
+1. Mitu % mürataseme tõusudest langeb kokku planeeritud tegevustega.
+2. Mõõdetud mürataseme võrdlus harjutusvälja graafikus planeeritud mürakategooriatega.
+3. Mõõdetud müratase tuulesuuna ja tuulekiiruse järgi.
 
 ## Arhitektuur 
 
@@ -54,17 +54,19 @@ Kasutatavad andmeallikad:
 
 | Komponent | Tööriist |
 |-----------|---------|
-| Sissevõtt | [Python / Airflow / muu] |
-| Transformatsioon | [SQL / dbt / muu] |
-| Andmehoidla | PostgreSQL |
-| Näidikulaud | [Superset / Streamlit / muu] |
-| Orkestreerimine | [Airflow / cron / muu] |
+| Sissevõtt | Python, Requests |
+| Transformatsioon | SQL, Python |
+| Andmehoidla | DuckDB |
+| Seirepaneel | Dash, Plotly |
+| Orkestreerimine | APScheduler |
+| Testimine | pytest |
+| Käivitamine | Docker Compose |
 
 ## Käivitamine
 
 ```bash
 # 1. Klooni repo ja liigu kausta
-git clone <repo-url>
+git clone <(https://github.com/heinnurmhanna/nursipalu-muraseire-analuus)>
 cd <projekti-kaust>
 
 # 2. Kopeeri keskkonnamuutujad
@@ -74,31 +76,35 @@ cp .env.example .env
 # 3. Käivita teenused
 docker compose up -d --build
 
-# 4. [Vabatahtlik: käivita sissevõtt käsitsi esimesel korral]
-# docker compose exec pipeline python scripts/run_pipeline.py run-all
 ```
 
-Airflow (kui kasutatakse): http://localhost:8080 (kasutaja: airflow / parool: airflow)
-Näidikulaud: http://localhost
+Näidikulaud: [http://localhost](http://localhost:8050)
 
 ## Saladused ja konfiguratsioon
 
-Kõik saladused (paroolid, API võtmed, andmebaasi URL-id) on `.env` failis. Repos on ainult `.env.example`, mis näitab vajalike muutujate struktuuri ilma tegelike väärtusteta. Päris `.env` faili ei tohi GitHubi panna - see on `.gitignore`-s.
+Projekt ei vaja praeguses seisus eraldi API võtmeid, kuid andmeallikate URL-id, koordinaadid ja käivitusintervallid loetakse keskkonnamuutujatest. Repos peaks olema ainult `.env.example`; päris `.env` faili ei tohi GitHubi panna.
 
-Vajalikud muutujad:
+Vajalikud või kasutatavad muutujad:
 
-| Muutuja | Tähendus | Näide |
-|---------|----------|-------|
-| `DB_PASSWORD` | PostgreSQL parool | (saladus) |
-| `[teised]` | ... | ... |
+| Muutuja | Tähendus | Näide / vaikimisi väärtus |
+|---------|----------|---------------------------|
+| `DB_PATH` | DuckDB andmebaasi asukoht | `data/nursipalu.duckdb` |
+| `DASH_PORT` | Dash seirepaneeli port | `8050` |
+| `NOISE_INTERVAL_HOURS` | Müraandmete uuendamise intervall tundides | `1` |
+| `SCHEDULE_INTERVAL_HOURS` | Ajakava uuendamise intervall tundides | `1` |
+| `WEATHER_INTERVAL_HOURS` | Ilmaandmete uuendamise intervall tundides | `1` |
+| `SCHEDULE_SOURCE_URL` | Kaitseväe harjutusväljade ajakava JSON-i URL | `https://mil.ee/wp-content/uploads/training-grounds/training_ground_schedule.json` |
+| `WEATHER_SOURCE_URL` | Open-Meteo API baasaadress | `https://api.open-meteo.com/v1/forecast` |
+| `WEATHER_LATITUDE` | Ilmapäringu laiuskraad | projekti `.env` väärtus |
+| `WEATHER_LONGITUDE` | Ilmapäringu pikkuskraad | projekti `.env` väärtus |
 
 ## Andmevoog lühidalt
 
-1. **Sissevõtt** — [Kirjelda, kuidas andmed allikast kätte saadakse]
-2. **Laadimine** — Andmed laaditakse `staging` kihti
-3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]
-4. **Testimine** — [Mitu] andmekvaliteedi testi kontrollivad korrektsust
-5. **Näidikulaud** — [Kuvab müraseirejaamas mõõdetud mürataseme seoseid graafikus palneeritud tegevuste mürakategooriatega, samuti seost ilmastikuandmetega.]
+1. **Sissevõtt** — Python skriptid küsivad andmed müraseire API-st, Kaitseväe harjutusväljade ajakava JSON-ist ja Open-Meteo API-st. API vastused salvestatakse kaustadesse `data/raw/noise`, `data/raw/schedule` ja `data/raw/weather`.
+2. **Laadimine** — Andmed kirjutatakse DuckDB tabelitesse `noise`, `schedule` ja `weather`.
+3. **Transformatsioon** — `schema.py` loob `merged` vaate, mis ühendab müra-, ajakava- ja ilmaandmed tunnipõhiseks analüüsiks.
+4. **Testimine** — 4 andmekvaliteedi testi kontrollivad korrektsust
+5. **Näidikulaud** — Dash kuvab müraseirejaamas mõõdetud mürataseme seoseid graafikus palneeritud tegevuste mürakategooriatega, samuti seost ilmastikuandmetega.
 
 ## Andmekvaliteedi testid
 
@@ -119,24 +125,51 @@ docker compose run --rm pipeline pytest tests/test_quality.py -v
 .
 ├── README.md
 ├── compose.yml
+├── Dockerfile
+├── requirements.txt
 ├── .env.example
 ├── .gitignore
+├── data/
+│   ├── raw/
+│   │   ├── noise/
+│   │   ├── schedule/
+│   │   └── weather/
+│   ├── staged/
+│   └── processed/
 ├── docs/
-│   ├── arhitektuur.md      ← nädal 1 väljund
-│   └── progress.md         ← nädal 2 väljund
-└── ...                     ← ülejäänud projektifailid
+│   ├── arhitektuur.md
+│   └── progress.md
+├── src/
+│   ├── main.py
+│   ├── ingest/
+│   │   ├── ingest_noise.py
+│   │   ├── ingest_schedule.py
+│   │   └── ingest_weather.py
+│   ├── transform/
+│   │   └── schema.py
+│   └── dashboard/
+│       └── app.py
+└── tests/
+    └── test_quality.py
 ```
 
 ## Kokkuvõte, puudused ja võimalikud edasiarendused
 
 **Kokkuvõte:**
-- [Loetle, mis on lõpule viidud, mis töötab hästi]
+- Valmis on andmevoog, mis toob kokku müraandmed, harjutusvälja ajakava ja ilmaandmed.
+- DuckDB andmebaasis luuakse `merged` vaade, mida kasutatakse analüüsiks ja näidikulaua jaoks.
+- Näidikulaud kuvab LAFeq mürataset võrreldes Nursipalu harjutusvälja planeeritud mürakategooriatega.
+- Näidikulaud näitab, millise tuulesuuna ja tuulekiiruse korral on mõõdetud kõrgemaid või madalamaid LAFeq väärtusi.
+- Arvutatakse KPI „LAFeq ≥ 65 dB tundide kattuvus planeeritud tegevustega“.
+- Andmekvaliteeti kontrollitakse pytest testidega.
 
 **Puudused:**
-- [Loetle ausalt, mis jäi tegemata - see ei mõjuta hinnet negatiivselt, vaid aitab hinnata]
+- Müraandmete sissevõtt küsib vaikimisi viimase 24 tunni andmed; varasemate raw-failide täielikuks kasutamiseks on vaja eraldi backfill-loogikat.
+- Ajaline kattuvus planeeritud tegevustega ei tõesta põhjuslikku seost, vaid näitab üksnes sündmuste samaaegsust.
 
 **Mis edasi:**
-- [Andmestikud võimaldavad uurida oluliselt põhjalikumalt võimalikke seoseid mõõdetud müra ja ilmastiku andmete vahel.]
+- Andmestikud sisaldavad palju rohkem andmeid ilmastiku kohta ja võimaldavad uurida võimalikke seoseid mõõdetud müra ja ilmastiku andmete vahel põhjalikumalt.
+- Lisada võimalus filtreerida jooniseid planeeritud mürakategooria järgi.
 
 ## Meeskond
 
@@ -148,20 +181,3 @@ docker compose run --rm pipeline pytest tests/test_quality.py -v
 | Aldo Rääbis | kvaliteedi omanik |
 
 
-
-## Töö etapid 
-
-Siia vist võiksime juurde kirjutada ka samm sammulised mõtted, et milline projekt on
-
-1. Määratleda äriküsimus. Sõnastada, mida soovitakse teada saada (kas harjutused ja ilm mõjutavad mürataset).
-2. Kaardistada andmeallikad. Leida müraseire, harjutusgraafiku ja ilmastiku andmeallikad ning kontrollida ligipääsu.
-3. Luua projekti struktuur. Teha GitHubi repo, kaustad, README ja vajalikud konfiguratsioonifailid.
-4. Koguda andmed automaatselt. Luua skriptid, mis laadivad regulaarselt alla müra-, ilma- ja harjutusgraafiku andmed.
-5. Salvestada toorandmed. Hoida algandmed failides või andmebaasis, et neid saaks hiljem uuesti kasutada.
-6. Puhastada ja teisendada andmed. Ühtlustada ajatemplid, eemaldada vigased väärtused ja viia kõik andmed samale ajatasemele (nt tunnipõhiseks).
-7. Ühendada andmed üheks tabeliks. Siduda müraseire, harjutusgraafiku ja ilmastikuandmed ühise ajajoone alusel.
-8. Kontrollida andmekvaliteeti. Teha testid puuduvate väärtuste, duplikaatide ja ebareaalsete mõõtmiste leidmiseks.
-9. Luua dashboard / näidikulaud. Kuvada graafikud ja KPI-d, mis aitavad võrrelda mürataset, harjutusi ja ilmastikku.
-10. Analüüsida tulemusi. Vaadata, kas harjutuste ja mürataseme vahel ilmneb ajaline seos ning kuidas ilm võib tulemusi mõjutada.
-11. Dokumenteerida projekt. Kirjeldada arhitektuur, töövoog, testid, piirangud ja käivitamise juhend.
-12. Esitleda lõpptulemust. Salvestada demo/video ja näidata kogu andmetöövoogu allikast dashboardini.
