@@ -111,7 +111,7 @@ Projekt kontrollib järgmist:
 
 
 Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
-# docker compose run --rm pipeline pytest tests/test_quality.py -v
+docker compose run --rm pipeline pytest tests/test_quality.py -v
 
 ## Projekti struktuur
 
