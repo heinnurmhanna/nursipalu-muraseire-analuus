@@ -104,12 +104,14 @@ Vajalikud muutujad:
 
 Projekt kontrollib järgmist:
 
-1. [Test 1 - nt: kasutajate ID on unikaalne]
-2. [Test 2 - nt: tellimuse summa pole null]
-3. [Test 3 - nt: kuupäev jääb vahemikku 2020-2026]
-[Lisa rohkem, kui sul on]
+1. Puuduvate väärtuste kontroll: tagatakse, et kriitilised väljad ei oleks puudu
+2. Unikaalsuse kontroll: välditakse dublikaate
+3. Väärtuste vahemiku kontroll: kontrollitakse, et andmete väärtused jääksid realistlikesse piiridesse
+4. Äriloogika kontroll: kontrollitakse, et sündmuse algusaeg oleks alati varasem kui lõpuaeg
+
 
 Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
+# docker compose run --rm pipeline pytest tests/test_quality.py -v
 
 ## Projekti struktuur
 
