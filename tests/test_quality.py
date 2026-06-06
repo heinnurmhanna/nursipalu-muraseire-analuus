@@ -47,12 +47,12 @@ def test_unique_station_timestamp(conn):
     assert not dups, f"Duplicate (station_id, timestamp_utc) rows found: {dups[:5]}"
 
 
-def test_noise_laeq_range(conn):
+def test_noise_lafeq_range(conn):
     """LAeq values must be in a physically realistic 0–150 dB range."""
     bad = conn.execute(
-        "SELECT COUNT(*) FROM noise WHERE laeq_db < 0 OR laeq_db > 150"
+        "SELECT COUNT(*) FROM noise WHERE lafeq_db < 0 OR lafeq_db > 150"
     ).fetchone()[0]
-    assert bad == 0, f"{bad} noise rows have laeq_db outside 0–150 dB"
+    assert bad == 0, f"{bad} noise rows have lafeq_db outside 0–150 dB"
 
 
 def test_noise_lceq_range(conn):
